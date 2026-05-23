@@ -1,0 +1,10 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# WorkBuddy internal
+.workbuddy/
+
+# Backup files (optional — remove this line if you want backups in git)
+# carton-crm-backup-*.json
