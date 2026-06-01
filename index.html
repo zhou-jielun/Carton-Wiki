@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Sophie外贸版 CRM</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js" defer></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js" defer></script>
+<!-- world-map-data.js 延迟加载，见 _loadWorldMapData() -->
 <script>
 tailwind.config = {
   theme: {
@@ -316,6 +319,26 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
   background: #dbeafe;
   color: #2563eb;
 }
+.cust-card-stage-interest {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+.cust-card-stage-negotiate {
+  background: #fff7ed;
+  color: #ea580c;
+}
+.cust-card-stage-sample {
+  background: #dcfce7;
+  color: #16a34a;
+}
+.cust-card-stage-closed {
+  background: #ccfbf1;
+  color: #0d9488;
+}
+.cust-card-stage-lost {
+  background: #fce4ec;
+  color: #e11d48;
+}
 .cust-card-followup {
   font-size: 14px;
   color: #64748b;
@@ -359,8 +382,61 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
   margin-left: 44px;
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 6px;
 }
+/* 糖果色标签药丸 */
+.cust-card-candy-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  line-height: 1.5;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: default;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.cust-card-candy-tag:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+/* 7 色糖果循环 */
+.cust-card-candy-tag.candy-0 { background: #FFD6E0; color: #C2185B; }
+.cust-card-candy-tag.candy-1 { background: #D4E7FF; color: #1565C0; }
+.cust-card-candy-tag.candy-2 { background: #C8F7C5; color: #2E7D32; }
+.cust-card-candy-tag.candy-3 { background: #FFF0C4; color: #B8860B; }
+.cust-card-candy-tag.candy-4 { background: #E8D5FF; color: #6A1B9A; }
+.cust-card-candy-tag.candy-5 { background: #FFD8BF; color: #D84315; }
+.cust-card-candy-tag.candy-6 { background: #C5F0F0; color: #00838F; }
+/* 导出对话框来源按钮 */
+.export-source-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.export-source-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+.export-source-btn.candy-0 { background: #FFD6E0; color: #C2185B; }
+.export-source-btn.candy-1 { background: #D4E7FF; color: #1565C0; }
+.export-source-btn.candy-2 { background: #C8F7C5; color: #2E7D32; }
+.export-source-btn.candy-3 { background: #FFF0C4; color: #B8860B; }
+.export-source-btn.candy-4 { background: #E8D5FF; color: #6A1B9A; }
+.export-source-btn.candy-5 { background: #FFD8BF; color: #D84315; }
+.export-source-btn.candy-6 { background: #C5F0F0; color: #00838F; }
 /* 低饱和度苹果色卡片背景（8色循环） */
 .cust-card-hue-0 { background: #fafaf8; }
 .cust-card-hue-1 { background: #f5f5f7; }
@@ -523,6 +599,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 .dark-mode .cust-card-followup { color: #94a3b8; }
 .dark-mode .cust-card-stage-lead { background: #334155; color: #94a3b8; }
 .dark-mode .cust-card-stage-quote { background: #1e3a5f; color: #60a5fa; }
+.dark-mode .cust-card-stage-interest { background: #2d1f5c; color: #a78bfa; }
+.dark-mode .cust-card-stage-negotiate { background: #3b2208; color: #fb923c; }
+.dark-mode .cust-card-stage-sample { background: #1a2e1a; color: #22c55e; }
+.dark-mode .cust-card-stage-closed { background: #1a2e2a; color: #2dd4bf; }
+.dark-mode .cust-card-stage-lost { background: #3b1a24; color: #f43f5e; }
 .dark-mode .cust-card-localtime { color: #94a3b8; }
 .dark-mode .cust-card-localtime-dot { background: #555; }
 .dark-mode .cust-card-localtime-dot.working { background: #34C759; }
@@ -613,6 +694,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 .ai-generate-btn.loading .ai-spinner { display: block; }
 .ai-generate-btn.loading .ai-btn-text { display: none; }
 @keyframes ai-spin { to { transform: rotate(360deg); } }
+.loading-spinner { display: inline-block; width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: ai-spin 0.7s linear infinite; }
 .ai-result-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px 24px; margin-top: 16px; position: relative; border: 1.5px solid rgba(0,122,255,0.15); transition: var(--transition); }
 .ai-result-card .ai-result-text { font-size: 14px; line-height: 1.7; color: var(--text-primary); white-space: pre-wrap; word-break: break-word; margin-bottom: 16px; }
 .ai-result-actions { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -695,6 +777,17 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
 .dark-mode .faq-card { background: var(--card); }
 .dark-mode .faq-hue-0 { border-left-color: #A8987A; }
 .dark-mode .faq-hue-1 { border-left-color: #7A90A8; }
+
+/* FAQ 题库删除按钮 */
+.faq-delete-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border: none;
+  background: transparent; border-radius: 8px;
+  cursor: pointer; transition: all 0.2s;
+  color: var(--text-secondary); opacity: 0.5;
+}
+.faq-delete-btn:hover { opacity: 1; background: rgba(255,59,48,0.12); color: #FF3B30; }
+.faq-delete-btn svg { width: 18px; height: 18px; }
 .dark-mode .faq-hue-2 { border-left-color: #A88080; }
 .dark-mode .faq-hue-3 { border-left-color: #7A987A; }
 .dark-mode .faq-hue-4 { border-left-color: #887A98; }
@@ -910,13 +1003,14 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
   background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%);
   pointer-events: none;
 }
-.wiki-card-icon { font-size: 36px; z-index: 1; }
+.wiki-card-icon { display: none; }
 .wiki-card-code-overlay {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 800;
-  color: rgba(0,0,0,0.25);
+  color: rgba(0,0,0,0.45);
   z-index: 1;
-  letter-spacing: 2px;
+  letter-spacing: 3px;
+  text-shadow: 0 1px 2px rgba(255,255,255,0.3);
 }
 .wiki-card-code { font-size: 20px; font-weight: 700; color: var(--apple-blue); margin-bottom: 4px; display: none; }
 .wiki-card-name { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
@@ -1196,6 +1290,114 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
   .wiki-params-grid { grid-template-columns: 1fr; }
   .wiki-structure-image { min-height: 240px; }
 }
+
+/* ========== 地图看板 - ECharts + Apple Design v3 ========== */
+.map-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
+.map-stat-card { background: var(--card); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 14px; transition: all 0.25s ease; cursor: pointer; border: 1.5px solid transparent; position: relative; overflow: hidden; }
+.map-stat-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); border-color: rgba(0,122,255,0.15); }
+.map-stat-card.active { border-color: var(--apple-blue); background: rgba(0,122,255,0.03); }
+.map-stat-icon { width: 42px; height: 42px; border-radius: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: transform 0.2s ease; }
+.map-stat-icon svg { width: 20px; height: 20px; }
+.map-stat-num { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.map-stat-label { font-size: 11px; color: var(--text-secondary); margin-top: 1px; font-weight: 500; }
+.map-stat-trend { font-size: 10px; font-weight: 600; display: flex; align-items: center; gap: 3px; margin-top: 4px; }
+.map-stat-trend.up { color: #34C759; }
+.map-stat-trend.down { color: #FF3B30; }
+/* 筛选栏 */
+.map-filter-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.map-filter-bar select, .map-filter-bar input { padding: 7px 12px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1); background: var(--card); font-size: 12px; color: var(--text-primary); outline: none; font-family: inherit; transition: border-color 0.2s; }
+.map-filter-bar select:focus, .map-filter-bar input:focus { border-color: var(--apple-blue); }
+.map-filter-btn { padding: 7px 16px; border-radius: 8px; font-size: 12px; font-weight: 500; border: none; cursor: pointer; transition: all 0.2s; }
+.map-filter-btn.primary { background: var(--apple-blue); color: #fff; }
+.map-filter-btn.primary:hover { background: #0051D4; }
+.map-filter-btn.ghost { background: transparent; color: var(--text-secondary); }
+.map-filter-btn.ghost:hover { color: var(--apple-blue); background: rgba(0,122,255,0.06); }
+/* ECharts地图容器 */
+.map-grid { display: grid; grid-template-columns: 1fr 300px; gap: 16px; }
+.map-echarts-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); position: relative; overflow: hidden; min-height: 500px; }
+.map-echarts-inner { width: 100%; height: 500px; }
+/* 缩放控件 */
+.map-zoom-controls { position: absolute; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 4px; z-index: 10; }
+.map-zoom-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1); background: rgba(255,255,255,0.92); backdrop-filter: blur(8px); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--text-primary); transition: all 0.2s; font-weight: 500; }
+.map-zoom-btn:hover { background: rgba(0,122,255,0.08); border-color: var(--apple-blue); color: var(--apple-blue); }
+.map-zoom-btn svg { width: 14px; height: 14px; }
+/* 图例 */
+.map-legend-h { position: absolute; bottom: 20px; left: 20px; z-index: 10; background: rgba(255,255,255,0.92); backdrop-filter: blur(8px); padding: 6px 12px; border-radius: 8px; display: flex; align-items: center; gap: 8px; font-size: 10px; color: var(--text-secondary); border: 1px solid rgba(0,0,0,0.06); }
+.map-legend-gradient { width: 100px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #F2F2F7, #E3F2FD, #90CAF9, #42A5F5, #1E88E5, #0D47A1); }
+/* 国家列表面板 */
+.map-country-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; max-height: 500px; }
+.map-country-header { padding: 14px 16px; border-bottom: 1px solid rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; }
+.map-country-title { font-size: 14px; font-weight: 600; }
+.map-country-count { font-size: 11px; color: var(--text-secondary); }
+.map-country-list { flex: 1; overflow-y: auto; }
+.map-country-item { display: flex; align-items: center; gap: 10px; padding: 9px 16px; cursor: pointer; transition: background 0.15s ease; border-bottom: 1px solid rgba(0,0,0,0.03); }
+.map-country-item:hover { background: rgba(0,122,255,0.04); }
+.map-country-item.active { background: rgba(0,122,255,0.08); border-left: 3px solid var(--apple-blue); }
+.map-country-flag { font-size: 18px; flex-shrink: 0; width: 24px; text-align: center; }
+.map-country-name { flex: 1; font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.map-country-num { font-size: 12px; font-weight: 600; color: var(--apple-blue); min-width: 28px; text-align: right; }
+.map-country-bar { flex: 0 0 50px; height: 3px; background: rgba(0,0,0,0.06); border-radius: 2px; overflow: hidden; }
+.map-country-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; background: var(--apple-blue); }
+.map-hot-label { display: inline-flex; padding: 1px 6px; border-radius: 8px; font-size: 9px; font-weight: 700; }
+.map-hot-label.t1 { background: rgba(0,122,255,0.12); color: #0051D4; }
+.map-hot-label.t2 { background: rgba(0,122,255,0.08); color: #007AFF; }
+.map-hot-label.t3 { background: rgba(0,122,255,0.05); color: #4096FF; }
+/* 数据表格 */
+.map-data-table-wrap { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); margin-top: 16px; overflow: hidden; }
+.map-data-table-header { padding: 14px 20px; border-bottom: 1px solid rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; }
+.map-data-table-title { font-size: 15px; font-weight: 600; }
+.map-data-table-search { padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1); font-size: 12px; width: 200px; outline: none; background: var(--bg); color: var(--text-primary); }
+.map-data-table-search:focus { border-color: var(--apple-blue); }
+.map-data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.map-data-table th { background: var(--bg); padding: 10px 14px; text-align: left; font-weight: 600; font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.3px; cursor: pointer; user-select: none; border-bottom: 1px solid rgba(0,0,0,0.06); white-space: nowrap; transition: color 0.15s; }
+.map-data-table th:hover { color: var(--apple-blue); }
+.map-data-table th.sorted { color: var(--apple-blue); }
+.map-data-table th .sort-arrow { margin-left: 4px; font-size: 9px; }
+.map-data-table td { padding: 10px 14px; border-bottom: 1px solid rgba(0,0,0,0.03); color: var(--text-primary); }
+.map-data-table tbody tr { transition: background 0.15s ease; cursor: pointer; }
+.map-data-table tbody tr:nth-child(even) { background: rgba(0,0,0,0.01); }
+.map-data-table tbody tr:hover { background: rgba(0,122,255,0.05); }
+.map-pagination { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 12px; }
+.map-page-btn { width: 30px; height: 30px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.08); background: var(--card); cursor: pointer; font-size: 11px; transition: all 0.15s; color: var(--text-primary); }
+.map-page-btn:hover { background: rgba(0,122,255,0.06); border-color: var(--apple-blue); }
+.map-page-btn.active { background: var(--apple-blue); color: #fff; border-color: var(--apple-blue); }
+.map-page-info { font-size: 11px; color: var(--text-secondary); padding: 0 8px; }
+/* 阶段标签糖果色 */
+.stage-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+.stage-tag.potential { background: #f1f5f9; color: #64748b; }
+.stage-tag.interested { background: #f3e8ff; color: #7c3aed; }
+.stage-tag.quoting { background: #dbeafe; color: #2563eb; }
+.stage-tag.negotiating { background: #fff7ed; color: #ea580c; }
+.stage-tag.sample { background: #dcfce7; color: #16a34a; }
+.stage-tag.closed { background: #ccfbf1; color: #0d9488; }
+.stage-tag.lost { background: #fce4ec; color: #e11d48; }
+/* 暗色模式 */
+.dark-mode .map-echarts-card { background: #1C1C1E; }
+.dark-mode .map-country-card { background: #1C1C1E; }
+.dark-mode .map-country-item:hover { background: rgba(0,122,255,0.1); }
+.dark-mode .map-country-item.active { background: rgba(0,122,255,0.15); }
+.dark-mode .map-data-table-wrap { background: #1C1C1E; }
+.dark-mode .map-data-table th { background: #2C2C2E; }
+.dark-mode .map-data-table td { border-color: rgba(255,255,255,0.04); }
+.dark-mode .map-data-table tbody tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+.dark-mode .map-data-table tbody tr:hover { background: rgba(0,122,255,0.08); }
+.dark-mode .map-legend-h { background: rgba(44,44,46,0.92); border-color: rgba(255,255,255,0.08); }
+.dark-mode .map-legend-h span { color: #98989D; }
+.dark-mode .map-zoom-btn { background: rgba(44,44,46,0.9); border-color: rgba(255,255,255,0.08); color: #FFF; }
+.dark-mode .map-zoom-btn:hover { background: rgba(0,122,255,0.15); }
+.dark-mode .map-filter-bar select, .dark-mode .map-filter-bar input { background: #2C2C2E; border-color: rgba(255,255,255,0.08); color: #FFF; }
+.dark-mode .stage-tag.potential { background: #334155; color: #94a3b8; }
+.dark-mode .stage-tag.interested { background: #3b1f6e; color: #c4b5fd; }
+.dark-mode .stage-tag.quoting { background: #1e3a5f; color: #93c5fd; }
+.dark-mode .stage-tag.negotiating { background: #5c2d0e; color: #fdba74; }
+.dark-mode .stage-tag.sample { background: #14532d; color: #86efac; }
+.dark-mode .stage-tag.closed { background: #134e4a; color: #99f6e4; }
+.dark-mode .stage-tag.lost { background: #5c1029; color: #fda4af; }
+.dark-mode .map-data-table-search { background: #2C2C2E; border-color: rgba(255,255,255,0.08); color: #FFF; }
+.dark-mode .map-page-btn { background: #2C2C2E; border-color: rgba(255,255,255,0.08); color: #FFF; }
+@media (max-width: 1200px) { .map-grid { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .map-stats { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .map-stats { grid-template-columns: 1fr; } .map-data-table th:nth-child(5),.map-data-table td:nth-child(5),.map-data-table th:nth-child(6),.map-data-table td:nth-child(6) { display: none; } }
 </style>
 </head>
 <body>
@@ -1247,6 +1449,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
       <div class="nav-item" data-nav="/wiki">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
         <span>纸箱Wiki</span>
+      </div>
+      <div class="nav-item" data-nav="/map">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"/></svg>
+        <span>地图看板</span>
       </div>
       <div class="nav-item" data-nav="/settings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -1317,6 +1523,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helv
     <div class="mobile-nav-item" data-nav="/wiki">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
       <span>Wiki</span>
+    </div>
+    <div class="mobile-nav-item" data-nav="/map">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"/></svg>
+      <span>看板</span>
     </div>
     <div class="mobile-nav-item" data-nav="/settings">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -1444,6 +1654,10 @@ const Storage = {
   },
   save() {
     try {
+      // 清理 materials 中的 base64 图片，避免撑大 JSON
+      if (this._data && Array.isArray(this._data.materials)) {
+        for (const m of this._data.materials) { delete m.base64; }
+      }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this._data));
     } catch(e) {
       if (e.name === 'QuotaExceededError' || e.message && e.message.indexOf('quota') >= 0) {
@@ -1743,7 +1957,12 @@ const Utils = {
   // 深拷贝
   clone(obj) { return JSON.parse(JSON.stringify(obj)); },
   // 今天是周五?
-  isFriday() { return new Date().getDay() === 5; }
+  isFriday() { return new Date().getDay() === 5; },
+  // HTML转义
+  escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
 };
 
 // 替换模板占位符为当前客户信息
@@ -1809,6 +2028,43 @@ function highlightMatches(text, query) {
   return escaped.replace(regex, '<span class="search-highlight">$1</span>');
 }
 
+// ===== 中英文模糊搜索 =====
+// 使用字符重叠匹配：查询词中的每个字符如果在文本中出现，就计分
+// 短查询(<=2字)要求完整包含，长查询要求 >=50% 的字符匹配
+function fuzzyMatch(text, query) {
+  if (!query || !text) return false;
+  var t = text.toLowerCase();
+  var q = query.toLowerCase();
+  
+  // 完整包含快速通过
+  if (t.indexOf(q) !== -1) return true;
+  
+  // 短查询必须包含
+  var qChars = [];
+  for (var i = 0; i < q.length; i++) {
+    var ch = q.charAt(i);
+    if (ch.trim() && qChars.indexOf(ch) === -1) qChars.push(ch);
+  }
+  if (qChars.length === 0) return false;
+  if (qChars.length <= 2) {
+    return qChars.every(function(c) { return t.indexOf(c) !== -1; });
+  }
+  
+  // 长查询：计算字符命中率
+  var hit = 0;
+  for (var i = 0; i < qChars.length; i++) {
+    if (t.indexOf(qChars[i]) !== -1) hit++;
+  }
+  return (hit / qChars.length) >= 0.5;
+}
+
+// ===== 提取显示用的问题文本（去除来源标签） =====
+function cleanQuestionText(text) {
+  if (!text) return '';
+  // 去除 "（来源：xxx.docx）" 及之前可能存在的空格（支持嵌套括号场景）
+  return text.replace(/\s*[（(]来源[：:].*$/g, '').trim();
+}
+
 /* ================================================================
    ==================== 3.5 AI 生成引擎 ============================
    ================================================================ */
@@ -1834,7 +2090,7 @@ const AI = {
       body: JSON.stringify({
         model: 'deepseek-chat',
         messages: [
-          { role: 'system', content: '你是纸箱机械行业的外贸营销专家，熟悉瓦楞纸板生产线、纸箱印刷机等设备，擅长撰写英文和中文营销文案、客户沟通话术、专业技术问答。回答简洁专业。' },
+          { role: 'system', content: '你是纸箱机械行业和印刷包装行业的专家，熟悉瓦楞纸板生产线、纸箱印刷机等设备，精通印刷工艺（胶印/柔印/凹印/丝印/数码）、CMYK色彩体系、包装材料与外贸业务。擅长撰写英文和中文营销文案、客户沟通话术、专业技术问答。回答简洁专业。' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
@@ -1964,10 +2220,27 @@ const AI = {
   // ===== 专业问答生成 =====
   async generateAnswer(question) {
     if (this.isConfigured()) {
-      const prompt = '你是纸箱机械行业的专家（华宇纸箱机械厂，25年经验），请专业回答以下问题：\n\n' +
+      // 检查是否有导入的文档，提取相关内容作为上下文
+      var docContext = '';
+      try {
+        var raw = localStorage.getItem('faq_imported_docs');
+        if (raw) {
+          var docs = JSON.parse(raw);
+          var docNames = Object.keys(docs);
+          if (docNames.length > 0) {
+            // 取最近导入的文档作为上下文
+            var latestName = docNames[docNames.length - 1];
+            var doc = docs[latestName];
+            var fullText = (doc.text || '').substring(0, 8000); // 限制长度
+            docContext = '\n\n【参考文档】以下是已导入的知识库文档「' + latestName + '」的内容，请基于此文档回答问题：\n\n' + fullText;
+          }
+        }
+      } catch(e) { /* 忽略解析错误 */ }
+      
+      const prompt = '你是纸箱机械行业和印刷包装行业的专家（华宇纸箱机械厂，25年经验），请专业回答以下问题：\n\n' +
         '问题：' + question +
-        '\n\n涉及设备：瓦楞纸板生产线、瓦楞纸箱生产线、高速柔印开槽模切机、自动打包机、全自动粘箱打包一体机、全自动粘钉打包一体机等。' +
-        '\n\n要求：回答专业、准确、实用。使用 Markdown 格式，可包含要点列表、表格。直接输出答案，不要标题前缀。';
+        docContext +
+        '\n\n要求：回答专业、准确、实用。使用 Markdown 格式，可包含要点列表、表格。如果参考文档中包含相关答案，请优先引用文档内容。直接输出答案，不要标题前缀。';
       try {
         return await this._callDeepSeek(prompt);
       } catch (e) {
@@ -2069,6 +2342,8 @@ const Router = {
       this.renderCompetitors(content, title, subtitle, actions);
     } else if (path === '/faq') {
       this.renderFaq(content, title, subtitle, actions);
+    } else if (path === '/faq-source') {
+      this.renderFaqSource(params.name, content, title, subtitle, actions);
     } else if (path === '/calculator') {
       this.renderCalculator(content, title, subtitle, actions);
     } else if (path === '/simulation') {
@@ -2077,6 +2352,8 @@ const Router = {
       Router.renderWikiDetail(params.id, content, title, subtitle, actions);
     } else if (path === '/wiki') {
       this.renderWiki(content, title, subtitle, actions);
+    } else if (path === '/map') {
+      this.renderMap(content, title, subtitle, actions);
     } else {
       this.navigate('/');
     }
@@ -2335,11 +2612,13 @@ Router.renderCustomers = function(content, title, subtitle, actions) {
   const filterFollowup = sessionStorage.getItem('cust_filter_followup') || 'all';
   const filterCustomerType = sessionStorage.getItem('cust_filter_customerType') || 'all';
   const filterCountry = sessionStorage.getItem('cust_filter_country') || 'all';
+  const filterSource = sessionStorage.getItem('cust_filter_source') || 'all';
   const searchQuery = (sessionStorage.getItem('cust_search') || '').toLowerCase();
 
   let filtered = customers;
   if (filterCustomerType !== 'all') filtered = filtered.filter(c => (c.customerType || 'end_user') === filterCustomerType);
   if (filterCountry !== 'all') filtered = filtered.filter(c => c.country === filterCountry);
+  if (filterSource !== 'all') filtered = filtered.filter(c => c.source && c.source.trim() === filterSource);
   if (filterPriority !== 'all') filtered = filtered.filter(c => c.priority === filterPriority);
   if (filterStage !== 'all') filtered = filtered.filter(c => c.stage === filterStage);
   if (filterFollowup !== 'all') {
@@ -2373,6 +2652,13 @@ Router.renderCustomers = function(content, title, subtitle, actions) {
 
   // 视图模式（默认卡片视图）
   var viewMode = sessionStorage.getItem('cust_view_mode') || 'card';
+  // 直接从当前客户数据中收集所有客户的 source 字段作为「客户来源」选项
+  var sourceSet = {};
+  for (var ci = 0; ci < customers.length; ci++) {
+    var src = customers[ci].source;
+    if (src && src.trim()) sourceSet[src.trim()] = true;
+  }
+  var availableSources = Object.keys(sourceSet).sort(function(a, b) { return a.localeCompare(b); });
 
   content.innerHTML = `
     <!-- 顶部栏：数量 + 视图切换 -->
@@ -2412,6 +2698,10 @@ Router.renderCustomers = function(content, title, subtitle, actions) {
         <option value="pending" ${filterFollowup==='pending'?'selected':''}>待跟进</option>
         <option value="overdue" ${filterFollowup==='overdue'?'selected':''}>已过期</option>
       </select>
+      <select class="filter-select" id="filter-source" onchange="sessionStorage.setItem('cust_filter_source',this.value);Router.handleRoute();">
+        <option value="all" ${filterSource==='all'?'selected':''}>客户来源</option>
+        ${availableSources.map(function(src) { return '<option value="' + src + '" ' + (filterSource===src?'selected':'') + '>' + src + '</option>'; }).join('')}
+      </select>
     </div>
 
     ${filtered.length === 0 ? `
@@ -2430,19 +2720,28 @@ Router.renderCustomers = function(content, title, subtitle, actions) {
           let followUpClass = 'cust-card-followup';
           if (followUpText === '今天') followUpClass += ' cust-card-followup-today';
           else if (followUpText === '2天后' || followUpText === '3天后') followUpClass += ' cust-card-followup-soon';
-          const stageClass = c.stage === '报价中' ? 'cust-card-stage-quote' : 'cust-card-stage-lead';
+          const stageClassMap = { '潜在客户': 'cust-card-stage-lead', '意向明确': 'cust-card-stage-interest', '报价中': 'cust-card-stage-quote', '谈判中': 'cust-card-stage-negotiate', '样品确认': 'cust-card-stage-sample', '已成交': 'cust-card-stage-closed', '已流失': 'cust-card-stage-lost' };
+          const stageClass = stageClassMap[c.stage] || 'cust-card-stage-lead';
           const hueClass = 'cust-card-hue-' + (i % 8);
           const localTimeInfo = Utils.getLocalTimeInfo(c.country);
           const dotClass = localTimeInfo.isWorkHours ? 'cust-card-localtime-dot working' : 'cust-card-localtime-dot';
           var borderColor = c.customerType==='distributor'?'#007AFF':'#FF9500';
           // 列表视图（紧凑行）
           if (viewMode === 'list') {
+            var listTagsHtml = '';
+            if (c.tags && c.tags.length) {
+              listTagsHtml = c.tags.map(function(t, idx) {
+                var candyIdx = (t.length + idx * 3) % 7;
+                return '<span class="cust-card-candy-tag candy-' + candyIdx + '" style="flex-shrink:0;margin-left:4px;">' + t + '</span>';
+              }).join('');
+            }
             return `<div class="cust-card" style="border-left:3px solid ${borderColor};flex-direction:row;align-items:center;gap:16px;padding:12px 20px;min-width:auto;max-width:none;cursor:pointer;" onclick="Router.navigate('/customer?id=${c.id}')">
               <div class="cust-card-grade" style="background:${gradeColor};width:28px;height:28px;font-size:12px;">${c.priority || 'D'}</div>
               <div style="flex:1;min-width:0;display:flex;align-items:center;gap:12px;flex-wrap:nowrap;overflow:hidden;">
                 <div style="min-width:0;"><div style="font-size:14px;font-weight:600;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${displayName}</div></div>
                 <span style="font-size:12px;color:#64748b;white-space:nowrap;flex-shrink:0;">${getCountryFlag(c.country)} ${c.country}</span>
                 <span style="font-size:11px;padding:1px 8px;border-radius:8px;background:${getCustomerTypeColor(c)}15;color:${getCustomerTypeColor(c)};font-weight:500;white-space:nowrap;flex-shrink:0;">${getCustomerTypeLabel(c)}</span>
+                ${listTagsHtml}
               </div>
               <span class="cust-card-stage ${stageClass}" style="flex-shrink:0;">${c.stage || '潜在客户'}</span>
               <span style="font-size:12px;color:#64748b;white-space:nowrap;flex-shrink:0;"><span class="${dotClass}" style="display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px;vertical-align:middle;${localTimeInfo.isWorkHours?'background:#10b981;':'background:#94a3b8;'}"></span>${localTimeInfo.time}</span>
@@ -2463,7 +2762,15 @@ Router.renderCustomers = function(content, title, subtitle, actions) {
               <span style="flex-shrink:0;font-size:11px;padding:2px 8px;border-radius:10px;background:${getCustomerTypeColor(c)}15;color:${getCustomerTypeColor(c)};font-weight:500;">${getCustomerTypeIcon(c)} ${getCustomerTypeLabel(c)}</span>
             </div>
             <div class="cust-card-country">${getCountryFlag(c.country)} ${c.country}</div>
-            <div class="cust-card-product">${c.mainProduct || (c.tags && c.tags.length ? c.tags.join('、') : '-')}</div>
+            <div class="cust-card-product">${c.mainProduct || '-'}</div>
+            ${c.tags && c.tags.length ? `
+            <div class="cust-card-tags">
+              ${c.tags.map(function(t, idx) {
+                var candyIdx = (t.length + idx * 3) % 7;
+                return '<span class="cust-card-candy-tag candy-' + candyIdx + '">' + t + '</span>';
+              }).join('')}
+            </div>
+            ` : ''}
             <div class="cust-card-footer">
               <span class="cust-card-stage ${stageClass}">${c.stage || '潜在客户'}</span>
               <span class="cust-card-localtime"><span class="${dotClass}"></span>${localTimeInfo.time} <span style="color:${localTimeInfo.isWeekend?'#FF9F7F':'var(--text-secondary)'};font-size:12px;font-weight:500;margin-left:2px;">${localTimeInfo.weekday}</span></span>
@@ -2684,7 +2991,7 @@ Router.renderCustomerDetail = function(id, content, title, subtitle, actions) {
           <div class="info-item"><div class="info-label">邮箱</div><div class="info-value">${c.email || '-'}</div></div>
           <div class="info-item"><div class="info-label">WhatsApp</div><div class="info-value">${c.whatsapp || '-'}</div></div>
           <div class="info-item"><div class="info-label">官网</div><div class="info-value">${c.website ? `<a href="${c.website}" target="_blank" style="color:#007AFF;text-decoration:none;">${c.website}</a>` : '-'}</div></div>
-          <div class="info-item"><div class="info-label">客户来源</div><div class="info-value">${c.source || '-'}</div></div>
+          <div class="info-item"><div class="info-label">客户来源</div><div class="info-value">${c.source ? '<span class="cust-card-candy-tag candy-' + (function(s) { var h = 0; for (var i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; } return Math.abs(h) % 7; })(c.source) + '">' + c.source + '</span>' : '-'}</div></div>
           <div class="info-item"><div class="info-label">技术负责人</div><div class="info-value">${c.techContact || '-'}</div></div>
           <div class="info-item"><div class="info-label">首次联系</div><div class="info-value">${c.firstContactDate ? Utils.formatDate(c.firstContactDate) : '-'}</div></div>
           <div class="info-item"><div class="info-label">成立时间</div><div class="info-value">${c.foundedDate ? (function() { const y = parseInt(c.foundedDate); if (!isNaN(y) && y > 1900 && y < 2100) { const years = new Date().getFullYear() - y; return y + '年（' + years + '年）'; } return c.foundedDate; })() : '-'}</div></div>
@@ -2958,7 +3265,7 @@ Router.renderSettings = function(content, title, subtitle, actions) {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             备份 (JSON)
           </button>
-          <button class="btn btn-secondary btn-lg" onclick="exportExcel()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;">
+          <button class="btn btn-secondary btn-lg" onclick="showExportDialog()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
             Excel (CSV)
           </button>
@@ -3944,71 +4251,156 @@ function exportComparison() {
 Router.renderFaq = function(content, title, subtitle, actions) {
   title.textContent = '专业问题';
   subtitle.textContent = '整理客户常见问题及解答';
-  actions.innerHTML = `<button class="btn btn-primary" onclick="showFaqForm()">+ 新增问题</button>`;
+  actions.innerHTML = `
+    <button class="btn btn-primary" onclick="showFaqForm()">+ 新增问题</button>
+    <button class="btn btn-secondary" onclick="document.getElementById('faq-import-input').click()" style="margin-left:8px;" title="上传 .docx / .txt 题库文件，自动解析并导入">📄 导入题库</button>
+    <input type="file" id="faq-import-input" accept=".docx,.txt" style="display:none;" onchange="importFaqFromFile(event)">
+  `;
 
   const faqs = Storage.getFaq();
-  const filterCategory = sessionStorage.getItem('faq_filter_category') || 'all';
-  const searchQuery = (sessionStorage.getItem('faq_search') || '').toLowerCase();
-  // 保留原始搜索词（未转小写前的）用于高亮
-  const searchQueryRaw = (sessionStorage.getItem('faq_search') || '');
 
-  let filtered = faqs;
-  if (filterCategory !== 'all') filtered = filtered.filter(f => f.category === filterCategory);
+  // 按 sourceFile 分组
+  const groups = {};
+  faqs.forEach(f => {
+    const key = f.sourceFile || '我的问题';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(f);
+  });
+
+  // 排序：「我的问题」排最前，其余按名称
+  const keys = Object.keys(groups).sort((a, b) => {
+    if (a === '我的问题') return -1;
+    if (b === '我的问题') return 1;
+    return a.localeCompare(b);
+  });
+
+  // 搜索框（全局跨文件夹搜索）
+  const searchQueryRaw = sessionStorage.getItem('faq_search') || '';
+  const searchQuery = searchQueryRaw.toLowerCase();
+
   if (searchQuery) {
-    // 分词 OR 匹配：将搜索词拆分为多个关键词，问题或答案包含任一即命中
-    const keywords = searchQuery.split(/[\s,，]+/).filter(k => k.length > 0);
-    filtered = filtered.filter(f => {
-      const q = (f.question || '').toLowerCase();
-      const a = (f.answer || '').toLowerCase();
-      // 先尝试完整匹配（保留原逻辑兼容性）
-      if (q.includes(searchQuery) || a.includes(searchQuery)) return true;
-      // 再尝试分词匹配
-      return keywords.some(k => q.includes(k) || a.includes(k));
-    });
+    // 搜索模式：跨所有题目搜索
+    let filtered = faqs.filter(f =>
+      fuzzyMatch(f.question || '', searchQuery) || fuzzyMatch(f.answer || '', searchQuery)
+    );
+    content.innerHTML = `
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
+        <div class="search-box" style="flex:1;min-width:200px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="faq-search-input" placeholder="搜索问题/解答... (Ctrl+K)" value="${searchQueryRaw}" onkeydown="if(event.key==='Enter'){sessionStorage.setItem('faq_search',this.value);Router.handleRoute();}">
+        </div>
+        <button class="btn btn-sm btn-ghost" onclick="sessionStorage.removeItem('faq_search');Router.handleRoute();">✕ 清除搜索</button>
+      </div>
+      <div style="margin-bottom:12px;font-size:14px;font-weight:600;color:var(--text-primary);">🔍 搜索结果（${filtered.length} 条）</div>
+      ${filtered.length === 0
+        ? `<div class="empty-state"><h3>未找到相关问题</h3><p style="margin-bottom:16px;">知识库中没有"${searchQueryRaw}"的相关问题</p><button class="ai-generate-btn" id="faq-ai-btn" onclick="askFaqAi('${searchQueryRaw.replace(/'/g,"\\'")}')"><span class="ai-spinner"></span>AI 智能回答</button><div id="faq-ai-answer" style="display:none;margin-top:16px;text-align:left;"></div></div>`
+        : `<div style="max-width:860px;">${filtered.map(f => faqSearchResult(f, searchQueryRaw)).join('')}</div>`
+      }
+    `;
+    return;
   }
 
+  // 浏览模式：显示题库文件夹列表
+  const folderColors = ['#C8B89A','#9AB0C4','#C4A0A0','#9AB89A','#A89AB8','#C4B48A','#8AB4AC','#C4A88E'];
+
+  content.innerHTML = `
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;align-items:center;">
+      <div class="search-box" style="flex:1;min-width:200px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="faq-search-input" placeholder="搜索全部问题/解答... (Ctrl+K)" onkeydown="if(event.key==='Enter'&&this.value.trim()){sessionStorage.setItem('faq_search',this.value);Router.handleRoute();}">
+      </div>
+    </div>
+    ${keys.length === 0
+      ? `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:48px;height:48px;"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><h3>暂无题库</h3><p>点击"导入题库"上传 .docx/.txt 文件，或点击"+ 新增问题"手动添加</p></div>`
+      : `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;">
+          ${keys.map((key, idx) => {
+            const count = groups[key].length;
+            const color = folderColors[idx % folderColors.length];
+            const isManual = key === '我的问题';
+            const encodedKey = encodeURIComponent(key);
+            return `
+              <div style="position:relative;cursor:pointer;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 24px;border-left:4px solid ${color};transition:var(--transition);display:flex;flex-direction:column;gap:8px;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='var(--shadow-hover)'" onmouseout="this.style.transform='';this.style.boxShadow='var(--shadow)'">
+                <div onclick="Router.navigate('/faq-source?name=${encodedKey}')" style="flex:1;cursor:pointer;">
+                  <div style="font-size:28px;">${isManual ? '✏️' : '📄'}</div>
+                  <div style="font-size:15px;font-weight:600;color:var(--text-primary);line-height:1.4;word-break:break-word;">${key}</div>
+                  <div style="font-size:13px;color:var(--text-secondary);">${count} 道题目</div>
+                </div>
+                <button class="faq-delete-btn" onclick="event.stopPropagation();deleteFaqSource('${key.replace(/'/g, "\\'")}')" title="删除整个题库"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
+              </div>
+            `;
+          }).join('')}
+        </div>`
+    }
+  `;
+};
+
+// ===== 删除整个题库 =====
+function deleteFaqSource(sourceName) {
+  if (!confirm('确定要删除题库「' + sourceName + '」吗？\n\n此操作不可撤销，该题库下的所有题目将被永久删除。')) return;
+
+  var faqs = Storage.getFaq();
+  var deletedCount = 0;
+  var remaining = [];
+  for (var i = 0; i < faqs.length; i++) {
+    if ((faqs[i].sourceFile || '我的问题') === sourceName) {
+      deletedCount++;
+    } else {
+      remaining.push(faqs[i]);
+    }
+  }
+  Storage.setFaq(remaining);
+
+  // 同步清理 faq_imported_docs
+  try {
+    var raw = localStorage.getItem('faq_imported_docs');
+    if (raw) {
+      var docs = JSON.parse(raw);
+      delete docs[sourceName];
+      localStorage.setItem('faq_imported_docs', JSON.stringify(docs));
+    }
+  } catch(e) { /* 忽略 */ }
+
+  alert('已删除「' + sourceName + '」，共移除 ' + deletedCount + ' 道题目。');
+  Router.handleRoute();
+}
+
+// 题库文件夹内页：显示某个 sourceFile 的全部题目
+Router.renderFaqSource = function(sourceName, content, title, subtitle, actions) {
+  const name = decodeURIComponent(sourceName || '');
+  title.textContent = name || '题库';
+  subtitle.textContent = '专业问题 › ' + (name || '');
+
+  const allFaqs = Storage.getFaq();
+  const faqs = allFaqs.filter(f => (f.sourceFile || '我的问题') === name);
+
+  // 搜索框
+  const searchQueryRaw = sessionStorage.getItem('faq_source_search_' + name) || '';
+  const searchQuery = searchQueryRaw.toLowerCase();
+  let filtered = faqs;
+  if (searchQuery) {
+    filtered = faqs.filter(f =>
+      fuzzyMatch(f.question || '', searchQuery) || fuzzyMatch(f.answer || '', searchQuery)
+    );
+  }
   const starred = filtered.filter(f => f.starred);
   const unstarred = filtered.filter(f => !f.starred);
+
+  actions.innerHTML = `
+    <button class="btn btn-ghost" onclick="Router.navigate('/faq')" style="margin-right:8px;">← 返回题库</button>
+    ${name === '我的问题' ? '<button class="btn btn-primary" onclick="showFaqForm()">+ 新增问题</button>' : ''}
+  `;
 
   content.innerHTML = `
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
       <div class="search-box" style="flex:1;min-width:200px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" id="faq-search-input" list="faq-suggestions" placeholder="搜索问题/解答... (Ctrl+K)" value="${searchQueryRaw}" onkeydown="if(event.key==='Enter'){sessionStorage.setItem('faq_search',this.value);Router.handleRoute();}">
+        <input type="text" id="faq-search-input" placeholder="在本题库中搜索..." value="${searchQueryRaw}"
+          onkeydown="if(event.key==='Enter'){sessionStorage.setItem('faq_source_search_${name.replace(/'/g,"\\'")}',this.value);Router.handleRoute();}">
       </div>
-      <datalist id="faq-suggestions">${faqs.map(f => '<option value="' + f.question.replace(/"/g, '&quot;') + '">').join('')}</datalist>
-      <select class="filter-select" onchange="sessionStorage.setItem('faq_filter_category',this.value);Router.handleRoute();">
-        <option value="all" ${filterCategory === 'all' ? 'selected' : ''}>全部分类</option>
-        ${EQUIPMENT_TYPES.map(t => `<option value="${t}" ${filterCategory === t ? 'selected' : ''}>${t}</option>`).join('')}
-        <option value="其他" ${filterCategory === '其他' ? 'selected' : ''}>其他</option>
-      </select>
-    </div>` +
-
-    // ===== 搜索模式 =====
-    (searchQuery ? `
-    <div style="margin-bottom:12px;display:flex;align-items:center;gap:12px;">
-      <div style="font-size:14px;font-weight:600;color:var(--text-primary);">🔍 搜索结果（${filtered.length}条）</div>
-      <button class="btn btn-sm btn-ghost" onclick="sessionStorage.removeItem('faq_search');Router.handleRoute();" style="font-size:12px;">清除搜索</button>
+      ${searchQueryRaw ? `<button class="btn btn-sm btn-ghost" onclick="sessionStorage.removeItem('faq_source_search_${name.replace(/'/g,"\\'")}');Router.handleRoute();">✕ 清除</button>` : ''}
+      <span style="font-size:13px;color:var(--text-secondary);">${filtered.length} / ${faqs.length} 题</span>
     </div>
-    ${filtered.length === 0 ? `
-      <div class="empty-state" style="padding:40px 20px;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:48px;height:48px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <h3>未找到相关问题</h3>
-        <p style="margin-bottom:16px;">知识库中没有"${searchQueryRaw}"的相关问题</p>
-        <button class="ai-generate-btn" id="faq-ai-btn" onclick="askFaqAi('${searchQueryRaw.replace(/'/g, "\\'")}')">
-          <span class="ai-spinner"></span>
-          AI 智能回答
-        </button>
-        <div id="faq-ai-answer" style="display:none;margin-top:16px;text-align:left;"></div>
-      </div>
-    ` : `
-      <div style="max-width: 860px;">
-        ${[...starred, ...unstarred].map(f => faqSearchResult(f, searchQueryRaw)).join('')}
-      </div>
-    `}` :
-
-    // ===== 浏览模式（无搜索） =====
-    `${starred.length > 0 ? `
+    ${starred.length > 0 ? `
       <div class="card" style="margin-bottom:16px;padding:16px 20px;">
         <div style="font-size:14px;font-weight:600;margin-bottom:12px;">★ 收藏夹 (${starred.length})</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
@@ -4016,12 +4408,13 @@ Router.renderFaq = function(content, title, subtitle, actions) {
         </div>
       </div>
     ` : ''}
-
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-      ${filtered.length === 0 ? '<div class="empty-state" style="grid-column:1/-1;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><h3>暂无问题</h3><p>使用搜索或点击"新增问题"开始添加</p></div>'
-        : [...unstarred, ...starred].map((f, i) => faqCard(f, i)).join('')}
-    </div>`)
-  ;
+      ${unstarred.length === 0 && starred.length === 0
+        ? '<div class="empty-state" style="grid-column:1/-1;"><h3>暂无题目</h3></div>'
+        : unstarred.map((f, i) => faqCard(f, i + starred.length)).join('')
+      }
+    </div>
+  `;
 };
 
 function faqCard(f, index) {
@@ -4034,7 +4427,7 @@ function faqCard(f, index) {
       <span class="faq-star ${f.starred ? 'active' : ''}" onclick="event.stopPropagation();toggleFaqStar('${f.id}')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="${f.starred ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
       </span>
-      <span style="flex:1;">${f.question}</span>
+      <span style="flex:1;">${cleanQuestionText(f.question)}</span>
     </div>
     <div style="display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap;">
       <span class="badge badge-gray">${f.category || '未分类'}</span>
@@ -4063,7 +4456,7 @@ function faqSearchResult(f, searchQuery) {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="${f.starred ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
       </span>
       <div style="flex:1;min-width:0;">
-        <div class="faq-sr-question">${highlightMatches(f.question || '', searchQuery)}</div>
+        <div class="faq-sr-question">${highlightMatches(cleanQuestionText(f.question || ''), searchQuery)}</div>
         <div style="display:flex;gap:6px;margin-top:4px;align-items:center;flex-wrap:wrap;">
           <span class="badge badge-gray" style="font-size:11px;">${f.category || '未分类'}</span>
           ${dateStr ? '<span style="font-size:11px;color:var(--text-secondary);">📅 ' + dateStr + '</span>' : ''}
@@ -4210,6 +4603,7 @@ function saveAiAnswerToFaq(question, btn) {
     question: question,
     answer: answerHtml,
     category: '',
+    sourceFile: '我的问题',
     starred: false,
     usageCount: 0,
     createdAt: new Date().toISOString()
@@ -4253,7 +4647,7 @@ function saveFaq(e) {
     const f = faqs.find(x => x.id === id);
     if (f) { f.question = fd.get('question'); f.answer = fd.get('answer'); f.category = fd.get('category'); f.updatedAt = new Date().toISOString(); }
   } else {
-    faqs.push({ id: Utils.id(), question: fd.get('question'), answer: fd.get('answer'), category: fd.get('category'), starred: false, usageCount: 0, createdAt: new Date().toISOString() });
+    faqs.push({ id: Utils.id(), question: fd.get('question'), answer: fd.get('answer'), category: fd.get('category'), sourceFile: '我的问题', starred: false, usageCount: 0, createdAt: new Date().toISOString() });
   }
   Storage.setFaq(faqs);
   closeModal(); Utils.toast(id ? '问题已更新' : '问题已添加'); Router.handleRoute();
@@ -4267,6 +4661,559 @@ function deleteFaq(id) {
     Storage.setFaq(Storage.getFaq().filter(x => x.id !== id));
     Utils.toast('问题已删除'); Router.handleRoute();
   });
+}
+
+// ===== 清理文档片段：去除【判断】【单选】等标签和答案标记(×)(√)等 =====
+function cleanDocSnippet(text) {
+  if (!text) return '';
+  return text
+    .replace(/^[\s\n]*【[^】]*】\s*/g, '')          // 去除开头【判断】【单选】【简答】等
+    .replace(/^[a-z]\.\s*/gi, '')                   // 去除选项 A. B. C. D.
+    .replace(/[\s]*[（(]\s*[×√✓✗✔✘]\s*[）)]\s*/g, ' ') // 去除 (×) (√) 答案标记
+    .replace(/[（(]\s*[×√✓✗✔✘].*?[）)]/g, '')         // 去除 (  ×  )) 等复杂标记
+    .replace(/^答案[：:]\s*.+$/gm, '')               // 去除单独的答案行
+    .replace(/\s{2,}/g, ' ')                         // 合并多余空格
+    .replace(/^[.。，,；;、\s]+/, '')                // 去除开头标点
+    .trim();
+}
+
+// ===== 提取整道题（匹配行+下一行答案） =====
+function extractDocQA(text, matchIdx) {
+  // 找到匹配位置所在的行，尝试把下一行（如果是答案）也带上
+  var beforeMatch = text.substring(0, matchIdx);
+  var lastNewline = beforeMatch.lastIndexOf('\n');
+  var lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
+  var afterMatch = text.substring(matchIdx);
+  var firstNewline = afterMatch.indexOf('\n');
+  var lineEnd = firstNewline === -1 ? text.length : matchIdx + firstNewline;
+  
+  var mainLine = text.substring(lineStart, lineEnd).trim();
+  // 如果匹配行不是答案行本身，检查下一行是否是答案
+  var nextLine = '';
+  if (firstNewline !== -1) {
+    var nextStart = matchIdx + firstNewline + 1;
+    var nextEnd = text.indexOf('\n', nextStart);
+    if (nextEnd === -1) nextEnd = text.length;
+    nextLine = text.substring(nextStart, nextEnd).trim();
+    // 只拼接明显是答案的行
+    if (/^答案[：:]/.test(nextLine) || /^[（(]\s*[×√].*[）)]/.test(nextLine)) {
+      mainLine = mainLine + '\n' + nextLine;
+    }
+  }
+  return cleanDocSnippet(mainLine);
+}
+
+// ===== 按题目边界拆分段落（识别【、编号等标记） =====
+function segmentByQuestions(text) {
+  var lines = text.split('\n');
+  var segments = [];
+  var current = [];
+  var firstContent = true;   // 标记是否还在文档头部（标题/简介区域）
+  
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    var trimmed = line.trim();
+    if (!trimmed) continue;  // 跳过空行
+    
+    // 判断是否是新题目的开始
+    var isNewSegment = (
+      /^\s*[【\[]/.test(trimmed) ||            // 【判断】【单选】【简答】等
+      /^\s*\d{1,3}[\.、)]\s/.test(trimmed) ||  // 1. 2、3) 等编号
+      /^\s*[一二三四五六七八九十]{1,3}[\.、)]/.test(trimmed)  // 一、二、等中文编号
+    );
+    
+    if (isNewSegment && !firstContent) {
+      // 找到一个题目边界，保存前一段
+      if (current.length > 0) {
+        segments.push(current.join('\n'));
+      }
+      current = [trimmed];
+    } else {
+      current.push(trimmed);
+    }
+    firstContent = false;
+  }
+  
+  // 保存最后一段
+  if (current.length > 0) {
+    segments.push(current.join('\n'));
+  }
+  
+  return segments;
+}
+
+// ===== 对文本段落打分（字符命中 + 连续命中加分） =====
+function scoreSegment(seg, qChars, qLower) {
+  var lower = seg.toLowerCase();
+  var hits = 0;
+  var maxConsecutive = 0;
+  var cons = 0;
+  
+  for (var i = 0; i < qChars.length; i++) {
+    if (lower.indexOf(qChars[i]) !== -1) {
+      hits++;
+      cons++;
+      maxConsecutive = Math.max(maxConsecutive, cons);
+    } else {
+      cons = 0;
+    }
+  }
+  
+  // 连续命中权重最高（说明是短语匹配，不是零散命中）
+  var total = maxConsecutive * 25 + hits * 3;
+  
+  // 精确短语匹配加分
+  if (lower.indexOf(qLower) !== -1) total += 60;
+  
+  // 长段落惩罚（文档简介通常很长，真正题目较短）
+  if (seg.length > 300) total -= 15;
+  if (seg.length > 600) total -= 30;
+  
+  return { hits: hits, total: total };
+}
+
+// ===== 判断段落是否像题目（有 QA 标记） =====
+function isQaSegment(seg) {
+  var firstLine = seg.split('\n')[0].trim();
+  return /^[【\[]/.test(firstLine)             // 开头有类型标记
+    || /^\s*\d{1,3}[\.、)]/.test(firstLine)    // 数字编号
+    || seg.indexOf('？') !== -1                 // 包含问号
+    || seg.indexOf('?') !== -1
+    || /答案[：:]/m.test(seg)                   // 包含答案行
+    || /[（(]\s*[×√✓✗✔✘]/m.test(seg);           // 包含答案标记
+}
+
+// ===== 在导入文档原始文本中搜索（按题目分段+评分排序） =====
+function searchImportedDocs(query) {
+  var results = [];
+  try {
+    var raw = localStorage.getItem('faq_imported_docs');
+    if (!raw || !query) return results;
+    var docs = JSON.parse(raw);
+    var docNames = Object.keys(docs);
+    
+    for (var d = 0; d < docNames.length; d++) {
+      var doc = docs[docNames[d]];
+      var text = (doc.text || '');
+      var lowerText = text.toLowerCase();
+      var qLower = query.toLowerCase();
+      var qChars = [];
+      for (var i = 0; i < qLower.length; i++) {
+        if (qLower[i].trim()) qChars.push(qLower[i]);
+      }
+      
+      // 策略1：精确子串匹配（最高优先级，无需评分）
+      var idx = lowerText.indexOf(qLower);
+      while (idx !== -1) {
+        var snip = extractDocQA(text, idx);
+        if (snip && snip.length > 1) {
+          if (snip.length > 200) snip = snip.substring(0, 200) + '...';
+          results.push({ snippet: snip, score: 999 });
+        }
+        idx = lowerText.indexOf(qLower, idx + qLower.length);
+        if (results.length >= 10) break;
+      }
+      
+      // 策略2：按题目边界分段 → 评分 → 排序（核心改进）
+      if (results.length < 5) {
+        var segments = segmentByQuestions(text);
+        var scored = [];
+        
+        for (var s = 0; s < segments.length; s++) {
+          var seg = segments[s].trim();
+          if (seg.length < 5) continue;
+          
+          var isQa = isQaSegment(seg);
+          
+          // 非题目段落（文档简介等）：需要非常高的命中率才考虑
+          if (!isQa && seg.length > 200) continue;  // 长简介直接跳过
+          if (!isQa && seg.length <= 200) {
+            // 短非题目段落：要求 70% 字符命中
+            var nonQaHit = 0;
+            for (var c = 0; c < qChars.length; c++) {
+              if (seg.indexOf(qChars[c]) !== -1) nonQaHit++;
+            }
+            if (nonQaHit < qChars.length * 0.7) continue;
+          }
+          
+          var sc = scoreSegment(seg, qChars, qLower);
+          
+          // 题目段落阈值：>=2 个字符且 >=30% 命中率
+          if (sc.hits >= 2 && sc.hits >= Math.ceil(qChars.length * 0.3)) {
+            var snip = cleanDocSnippet(seg);
+            if (!snip || snip.length < 2) continue;
+            // 截短展示（保留核心内容）
+            if (snip.length > 200) snip = snip.substring(0, 200) + '...';
+            scored.push({ snippet: snip, score: sc.total, hits: sc.hits });
+          }
+          
+          // 题目段落额外检查：连续命中 >= qChars.length-2 也算（如 "数码印刷" 匹配 "印刷数码工艺"）
+          if (sc.hits < 2 && isQa && sc.total >= 40) {
+            var snip2 = cleanDocSnippet(seg);
+            if (snip2 && snip2.length > 2) {
+              if (snip2.length > 200) snip2 = snip2.substring(0, 200) + '...';
+              scored.push({ snippet: snip2, score: sc.total, hits: sc.hits });
+            }
+          }
+        }
+        
+        // 按分数降序排序（最相关的排最前面）
+        scored.sort(function(a, b) { return b.score - a.score; });
+        
+        // 去重后加入结果
+        var seen = {};
+        for (var s2 = 0; s2 < scored.length; s2++) {
+          var key = scored[s2].snippet.substring(0, 40);
+          if (!seen[key]) {
+            seen[key] = true;
+            results.push(scored[s2]);
+          }
+        }
+      }
+      
+      // 策略3：单行兜底（只匹配像题目的行）
+      if (results.length < 3) {
+        var lines = text.split('\n');
+        for (var li = 0; li < lines.length; li++) {
+          var line = lines[li].trim();
+          if (line.length < 4) continue;
+          
+          // 只看像题目或答案的行
+          var looksLikeQA = /【|[\?？]|答案[：:]|[（(]\s*[×√✓✗]/.test(line);
+          if (!looksLikeQA) continue;
+          
+          var lh = 0;
+          for (var c = 0; c < qChars.length; c++) {
+            if (line.indexOf(qChars[c]) !== -1) lh++;
+          }
+          if (lh >= Math.max(2, Math.ceil(qChars.length * 0.4))) {
+            var snip = cleanDocSnippet(line);
+            if (!snip || snip.length < 2) continue;
+            if (snip.length > 200) snip = snip.substring(0, 200) + '...';
+            // 检查是否重复
+            var dup = false;
+            for (var r2 = 0; r2 < results.length; r2++) {
+              if (results[r2].snippet === snip) { dup = true; break; }
+            }
+            if (!dup) results.push({ snippet: snip, score: lh * 5 });
+            if (results.length >= 10) break;
+          }
+        }
+      }
+      
+      if (results.length >= 10) break;
+    }
+  } catch(e) { console.error('searchImportedDocs error:', e); }
+  return results;
+}
+
+// ===== 清空已导入的题库文档 =====
+function clearImportedDocs() {
+  Utils.confirm('清空题库', '将删除所有已导入的题库数据（保留手动添加的 FAQ）和文档缓存，确定吗？').then(function(ok) {
+    if (!ok) return;
+    localStorage.removeItem('faq_imported_docs');
+    sessionStorage.removeItem('faq_search');    // 清除搜索词，避免页面卡在搜索模式
+    sessionStorage.removeItem('faq_filter_category');
+    // 同时清除由导入产生的 FAQ 条目（带来源标签的）
+    var faqs = Storage.getFaq();
+    var cleaned = faqs.filter(function(f) {
+      return !/[（(]来源[：:]/.test(f.question || '');
+    });
+    Storage.setFaq(cleaned);
+    Utils.toast('题库已清空，可以重新导入');
+    Router.handleRoute();
+  });
+}
+
+async function importFaqFromFile(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  
+  var name = file.name;
+  var isDocx = name.endsWith('.docx');
+  var isTxt = name.endsWith('.txt');
+  if (!isDocx && !isTxt) {
+    Utils.toast('请上传 .docx 或 .txt 格式的题库文件');
+    event.target.value = ''; return;
+  }
+  
+  // 显示加载状态
+  var content = document.getElementById('page-content');
+  var oldHtml = content.innerHTML;
+  content.innerHTML = '<div style="text-align:center;padding:80px 20px;"><div style="font-size:48px;margin-bottom:16px;">📄</div><h3>正在解析题库文件...</h3><p style="color:var(--muted);margin-top:8px;">文件名：' + name + '</p><div style="margin-top:16px;"><span class="loading-spinner"></span></div></div>';
+  
+  try {
+    var text;
+    if (isDocx) {
+      text = await parseDocxText(file);
+    } else {
+      text = await file.text();
+    }
+    
+    if (!text || text.length < 50) {
+      content.innerHTML = '<div style="text-align:center;padding:80px 20px;color:var(--danger);"><h3>⚠️ 解析失败</h3><p>文件内容为空或过短，请确认文件格式正确。</p><button class="btn btn-primary" style="margin-top:16px;" onclick="Router.handleRoute()">返回题库</button></div>';
+      event.target.value = ''; return;
+    }
+    
+    // 解析文本为 FAQ 条目
+    var faqs = parseDocTextToFaqs(text, name);
+    
+    if (faqs.length === 0) {
+      content.innerHTML = '<div style="text-align:center;padding:80px 20px;color:var(--danger);"><h3>⚠️ 解析失败</h3><p>未能从文件中识别出题目，请确认文件是标准的题库格式。</p><button class="btn btn-primary" style="margin-top:16px;" onclick="Router.handleRoute()">返回题库</button></div>';
+      event.target.value = ''; return;
+    }
+    
+    // 导入前确认
+    content.innerHTML = '<div style="text-align:center;padding:80px 20px;"><h3>📋 识别出 <b style="color:var(--primary);">' + faqs.length + '</b> 道题目</h3><p style="color:var(--muted);margin-top:8px;">文件：' + name + '</p><div style="margin-top:24px;display:flex;gap:12px;justify-content:center;"><button class="btn btn-primary" id="faq-import-confirm">确认导入</button><button class="btn btn-secondary" id="faq-import-cancel">取消</button></div></div>';
+    
+    var confirmed = await new Promise(function(resolve) {
+      document.getElementById('faq-import-confirm').onclick = function(){ resolve(true); };
+      document.getElementById('faq-import-cancel').onclick = function(){ resolve(false); };
+    });
+    
+    if (!confirmed) {
+      Router.handleRoute();
+      event.target.value = ''; return;
+    }
+    
+    // 显示导入进度
+    content.innerHTML = '<div style="text-align:center;padding:80px 20px;"><div style="font-size:48px;margin-bottom:16px;">💾</div><h3>正在导入题库...</h3></div>';
+    
+    // 导入并去重
+    var existing = Storage.getFaq();
+    var existingQuestions = existing.map(function(f){ return f.question.trim(); });
+    var imported = 0;
+    var skipped = 0;
+    
+    for (var i = 0; i < faqs.length; i++) {
+      if (existingQuestions.indexOf(faqs[i].question.trim()) !== -1) {
+        skipped++; continue;
+      }
+      existing.push(faqs[i]);
+      existingQuestions.push(faqs[i].question.trim());
+      imported++;
+    }
+    
+    Storage.setFaq(existing);
+    
+    // 同时保存完整文档文本供 AI 上下文使用
+    var docs = JSON.parse(localStorage.getItem('faq_imported_docs') || '{}');
+    docs[name] = { text: text, importedAt: new Date().toISOString(), count: faqs.length };
+    localStorage.setItem('faq_imported_docs', JSON.stringify(docs));
+    
+    // 显示成功结果
+    content.innerHTML = '<div style="text-align:center;padding:80px 20px;"><div style="font-size:48px;margin-bottom:16px;">✅</div><h3>导入完成！</h3><p style="color:var(--muted);margin-top:8px;">新增 <b style="color:var(--primary);">' + imported + '</b> 题' + (skipped > 0 ? '，跳过重复 ' + skipped + ' 题' : '') + '</p><p style="color:var(--muted);font-size:13px;margin-top:4px;">文件已保存为独立题库，点击下方进入查看</p><button class="btn btn-primary" style="margin-top:24px;" onclick="Router.navigate(\'/faq-source?name=' + encodeURIComponent(name) + '\')">📋 查看「' + name + '」</button></div>';
+    
+  } catch (e) {
+    console.error('导入失败:', e);
+    content.innerHTML = '<div style="text-align:center;padding:80px 20px;color:var(--danger);"><h3>❌ 导入失败</h3><p>' + (e.message || '未知错误') + '</p><p style="color:var(--muted);font-size:13px;margin-top:8px;">提示：请确认文件是标准 .docx 格式，且未被其他程序占用。</p><button class="btn btn-primary" style="margin-top:16px;" onclick="Router.handleRoute()">返回题库</button></div>';
+  }
+  event.target.value = '';
+}
+
+// ===== 解析 .docx 文件文本 =====
+function parseDocxText(file) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        JSZip.loadAsync(e.target.result).then(function(zip) {
+          var docXml = zip.file('word/document.xml');
+          if (!docXml) { reject(new Error('无法读取 docx 内容')); return; }
+          
+          docXml.async('text').then(function(xmlStr) {
+            var parser = new DOMParser();
+            var xmlDoc = parser.parseFromString(xmlStr, 'text/xml');
+            var wNs = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+            var paragraphs = xmlDoc.getElementsByTagNameNS(wNs, 'p');
+            var text = [];
+            for (var i = 0; i < paragraphs.length; i++) {
+              var line = paragraphs[i].textContent || '';
+              text.push(line.trim());
+            }
+            resolve(text.join('\n'));
+          });
+        }).catch(reject);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = function() { reject(new Error('文件读取失败')); };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// ===== 解析文本为 FAQ 条目 =====
+function parseDocTextToFaqs(text, sourceName) {
+  var allLines = text.split('\n');
+  // 找到答案章节的起始位置，只解析之前的题目
+  var cutOff = allLines.length;
+  for (var i = 0; i < allLines.length; i++) {
+    if (/^(第四部分|标准答案|参考答案|答案部分)/i.test(allLines[i].trim())) {
+      cutOff = i; break;
+    }
+  }
+  // 兜底：答案区可能叫 "一、判断题答案" 或以 "1.√" 模式开头
+  if (cutOff === allLines.length) {
+    for (var i = 0; i < allLines.length; i++) {
+      if (/^\s*1\s*\.\s*[√×✓✗]/.test(allLines[i]) || /^\s*(一|1)[、.]\s*(判断|单选|多选|填空|简答).*答案/.test(allLines[i])) {
+        cutOff = i; break;
+      }
+    }
+  }
+  var lines = allLines.slice(0, cutOff).filter(function(l){ return l.trim(); });
+  var faqs = [];
+  var now = new Date().toISOString();
+  var sourceTag = sourceName ? '（来源：' + sourceName + '）' : '';
+  
+  // 从答案部分提取判断题/单选题答案（1-70）
+  var shortAnswers = {};
+  var answerText = allLines.slice(cutOff).join('\n');
+  var match;
+  var re = /(\d+)\.\s*([√×✓X✓✗A-Da-d]+)/g;
+  while ((match = re.exec(answerText)) !== null) {
+    var num = parseInt(match[1]);
+    var ans = match[2].trim().replace(/✓/g, '√').replace(/✗/g, '×').replace(/x/gi, '×');
+    if (num >= 1 && num <= 90) shortAnswers[num] = ans;
+  }
+  
+  // 提取简答题答案（71-100）
+  var essayAnswers = {};
+  // 按段落取答案：从 "三、简答题标准答案" 或 "71." 开始
+  var essayStart = -1;
+  for (var i = cutOff; i < allLines.length; i++) {
+    if (/简答题.*答案|71\./.test(allLines[i])) { essayStart = i; break; }
+  }
+  if (essayStart > -1) {
+    var essayLines = allLines.slice(essayStart);
+    var currentNum = 0;
+    var currentAnswer = '';
+    for (var i = 0; i < essayLines.length; i++) {
+      var line = essayLines[i].trim();
+      var em = line.match(/^(\d+)\.\s*(.*)/);
+      if (em) {
+        var en = parseInt(em[1]);
+        if (en >= 71 && en <= 100) {
+          if (currentNum >= 71) essayAnswers[currentNum] = currentAnswer.trim();
+          currentNum = en;
+          currentAnswer = em[2];
+        } else if (currentNum >= 71) {
+          currentAnswer += ' ' + line;
+        }
+      } else if (currentNum >= 71 && line && !/^(第四部分|标准答案|参考答案)/i.test(line)) {
+        currentAnswer += ' ' + line;
+      }
+    }
+    if (currentNum >= 71) essayAnswers[currentNum] = currentAnswer.trim();
+  }
+  
+  // 提取题目
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    var qMatch = line.match(/^(\d+)\.\s*(.+)/);
+    if (!qMatch) continue;
+    var num = parseInt(qMatch[1]);
+    if (num < 1 || num > 100) continue;
+    
+    var questionText = qMatch[2].trim();
+    
+    // 跳过答案区域的编号（如"1.√ 2.√"这种行）
+    if (/^[√×✓✗A-D]/.test(questionText.substring(0,1))) continue;
+    
+    var category = '印刷知识';
+    var typeLabel = '';
+    if (num <= 30) typeLabel = '判断题';
+    else if (num <= 70) typeLabel = '单选题';
+    else typeLabel = '简答题';
+    
+    // 拼接完整问题（简答题可能是多行）
+    if (num >= 71) {
+      var fullQ = questionText;
+      var j = i + 1;
+      while (j < lines.length && !/^\d+\./.test(lines[j].trim()) && lines[j].trim()) {
+        var nextLine = lines[j].trim();
+        if (!/^(第二部分|第三部分|第四部分|印刷行业|说明：|标配|题型|对的|模拟印刷|数码印刷|简述|简单|简洁|高频)/i.test(nextLine)) {
+          fullQ += ' ' + nextLine;
+        }
+        j++;
+      }
+      questionText = fullQ.replace(/\s{2,}/g, ' ').trim();
+    }
+    
+    // 生成答案
+    var answer = '';
+    if (shortAnswers[num] !== undefined) {
+      answer = '**答案：' + shortAnswers[num] + '**';
+    } else if (essayAnswers[num]) {
+      answer = '**答案：**\n' + essayAnswers[num];
+    }
+    
+    if (answer) {
+      faqs.push({
+        id: Utils.id(),
+        question: '【' + typeLabel + '】' + questionText + ' ' + sourceTag,
+        answer: answer,
+        category: category,
+        sourceFile: sourceName || '',
+        starred: false,
+        usageCount: 0,
+        createdAt: now
+      });
+    }
+  }
+  
+  // ===== 兜底：无序号格式（Word 自动编号题库）=====
+  if (faqs.length === 0 && lines.length > 10) {
+    var questionLines = [];
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim();
+      if (!line) continue;
+      // 跳过章节标题
+      if (/^(第一部分|第二部分|第三部分|第四部分|第五部分|第六部分|判断题|填空题|单选题|多选题|简答题|题型|一、|二、|三、|四、|五、|六、)/i.test(line)) continue;
+      // 跳过提示/说明行
+      if (/^(对的打|错的打|以下小题|请选择|填入|说明：|对标|标配)/.test(line)) continue;
+      // 跳过答案行（纯答案常见格式）
+      if (/^(√|×|A\.|B\.|C\.|D\.)/.test(line)) continue;
+      // 跳过标题/描述行（含"题库""专用""聚焦"等关键词且 >30 字符）
+      if (line.length > 30 && /题库|专用|聚焦|适配/.test(line)) continue;
+      // 跳过过长的描述段落（不太可能是题目）
+      if (line.length > 300) continue;
+      questionLines.push({ text: line });
+    }
+    
+    // 按位置自动编号，匹配答案
+    for (var i = 0; i < questionLines.length && i < 100; i++) {
+      var num = i + 1;
+      var questionText = questionLines[i].text;
+      
+      var category = '印刷知识';
+      var typeLabel = '';
+      if (num <= 30) typeLabel = '判断题';
+      else if (num <= 50) typeLabel = '填空题';
+      else if (num <= 90) typeLabel = '选择题';
+      else typeLabel = '简答题';
+      
+      var answer = '';
+      if (shortAnswers[num] !== undefined) {
+        answer = '**答案：** ' + shortAnswers[num] + '**';
+      } else if (essayAnswers[num]) {
+        answer = '**答案：**\n' + essayAnswers[num];
+      }
+      
+      faqs.push({
+        id: Utils.id(),
+        question: '【' + typeLabel + '】' + questionText + ' ' + sourceTag,
+        answer: answer || '（暂无标准答案，欢迎补充）',
+        category: category,
+        sourceFile: sourceName || '',
+        starred: false,
+        usageCount: 0,
+        createdAt: now
+      });
+    }
+  }
+  
+  return faqs;
 }
 
 /* ================================================================
@@ -5555,6 +6502,10 @@ function deleteCustomer(id) {
 // 导出全部数据为 JSON（完整备份）
 function exportAllData() {
   const data = Storage.get();
+  // 导出时清理 materials 中的 base64 图片
+  if (Array.isArray(data.materials)) {
+    data.materials = data.materials.map(m => { const { base64, ...rest } = m; return rest; });
+  }
   const json = JSON.stringify(data, null, 2);
   const dateStr = Utils.today();
   Utils.download('carton-crm-backup-' + dateStr + '.json', json);
@@ -5563,7 +6514,228 @@ function exportAllData() {
   Router.handleRoute();
 }
 
-// 导出客户信息 + 跟进记录为 Excel (CSV)
+// 导出对话框
+function showExportDialog() {
+  const data = Storage.get();
+  const customers = data.customers || [];
+  const followups = data.followups || [];
+
+  // 收集所有来源
+  var sourceSet = {};
+  for (var i = 0; i < customers.length; i++) {
+    var src = customers[i].source;
+    if (src && src.trim()) sourceSet[src.trim()] = true;
+  }
+  var sources = Object.keys(sourceSet).sort(function(a, b) { return a.localeCompare(b); });
+
+  // 来源对应的糖果色索引
+  function candyIdx(s) {
+    var h = 0;
+    for (var i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
+    return Math.abs(h) % 7;
+  }
+
+  var sourceBtns = sources.map(function(src) {
+    return '<button class="export-source-btn candy-' + candyIdx(src) + '" onclick="exportFilteredExcel(\'' + src.replace(/'/g, "\\'") + '\')">' + src + '<span style="font-size:11px;opacity:0.7;"> (' + customers.filter(function(c) { return c.source === src; }).length + '个)</span></button>';
+  }).join('');
+
+  var overlay = document.createElement('div');
+  overlay.id = 'export-dialog-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);';
+  overlay.innerHTML = '<div style="background:#fff;border-radius:16px;padding:28px;max-width:520px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;"><div style="font-size:18px;font-weight:700;color:#1e293b;">📤 导出客户数据</div><button onclick="document.getElementById(\'export-dialog-overlay\').remove()" style="width:32px;height:32px;border-radius:50%;border:none;background:#f1f5f9;color:#64748b;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button></div><button class="btn btn-primary btn-lg" onclick="exportExcel();document.getElementById(\'export-dialog-overlay\').remove();" style="width:100%;margin-bottom:16px;font-size:15px;">📦 全部导出（共 ' + customers.length + ' 个客户）</button><div style="border-top:1px solid #f1f5f9;padding-top:16px;"><div style="font-size:13px;color:#94a3b8;margin-bottom:10px;">📋 按客户来源导出（Excel 格式，自动美化）</div><div style="display:flex;flex-wrap:wrap;gap:8px;">' + sourceBtns + '</div></div></div>';
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) overlay.remove();
+  });
+  document.body.appendChild(overlay);
+}
+
+// 按来源导出 Excel (.xls 格式，Excel/WPS 可直接打开编辑)，source 为 null 表示全部导出
+// 使用 Excel XML Spreadsheet 2003 格式，支持完整样式
+function exportFilteredExcel(source) {
+  const data = Storage.get();
+  var customers = data.customers || [];
+  var followups = data.followups || [];
+  const dateStr = Utils.today();
+
+  // 按来源筛选
+  var title = '全部来源';
+  var filteredFups = followups;
+  if (source) {
+    customers = customers.filter(function(c) { return c.source === source; });
+    title = source;
+    var custIds = {};
+    for (var ci = 0; ci < customers.length; ci++) { custIds[customers[ci].id] = true; }
+    filteredFups = followups.filter(function(f) { return custIds[f.customerId]; });
+  }
+
+  // 构建每个客户的跟进记录Map
+  var fupMap = {};
+  for (var fi = 0; fi < filteredFups.length; fi++) {
+    var f = filteredFups[fi];
+    if (!fupMap[f.customerId]) fupMap[f.customerId] = [];
+    fupMap[f.customerId].push(f);
+  }
+
+  // 判断第一次WAB是否回复 & 第一次邮件是否回复
+  function checkFirstReply(fups, methodKeyword) {
+    if (!fups || !fups.length) return '-';
+    var sorted = fups.slice().sort(function(a, b) { return (a.date || '').localeCompare(b.date || ''); });
+    for (var i = 0; i < sorted.length; i++) {
+      var m = (sorted[i].method || '').toLowerCase();
+      if (m.indexOf(methodKeyword.toLowerCase()) !== -1) {
+        return (sorted[i].content || '').length > 5 ? '是' : '否';
+      }
+    }
+    return '否';
+  }
+
+  // XML 字符转义
+  var xmlEsc = function(v) {
+    return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  };
+
+  // Sheet1 列定义
+  var custHeaders = ['联系人', '国家', '邮箱', 'WhatsApp', '公司名称', '官网',
+    'WAB是否回复', '邮件是否回复', '客户类型', '当前阶段', '优先级',
+    '意向设备类型', '设备规格', '预算', '核心痛点', '首次联系日期', '企业规模', '备注'];
+
+  // ========= 生成 Excel XML =========
+  var xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+  xml += '<?mso-application progid="Excel.Sheet"?>\n';
+  xml += '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"\n';
+  xml += ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"\n';
+  xml += ' xmlns:x="urn:schemas-microsoft-com:office:excel">\n';
+
+  // 样式定义
+  xml += '<Styles>\n';
+  // 默认样式
+  xml += '<Style ss:ID="Default" ss:Name="Normal"><Font ss:FontName="Microsoft YaHei" ss:Size="11"/></Style>\n';
+  // 标题样式 - 蓝色底白字
+  xml += '<Style ss:ID="sTitle"><Font ss:FontName="Microsoft YaHei" ss:Size="18" ss:Bold="1" ss:Color="#1E293B"/></Style>\n';
+  // 表头样式 - 蓝色背景
+  xml += '<Style ss:ID="sHeader"><Font ss:FontName="Microsoft YaHei" ss:Size="11" ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#3B82F6" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#2563EB"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#2563EB"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#2563EB"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#2563EB"/></Borders></Style>\n';
+  // 奇数行样式 - 白底
+  xml += '<Style ss:ID="sRow1"><Font ss:FontName="Microsoft YaHei" ss:Size="11"/><Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Alignment ss:Vertical="Center" ss:WrapText="1"/></Style>\n';
+  // 偶数行样式 - 浅灰底
+  xml += '<Style ss:ID="sRow2"><Font ss:FontName="Microsoft YaHei" ss:Size="11"/><Interior ss:Color="#F1F5F9" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Alignment ss:Vertical="Center" ss:WrapText="1"/></Style>\n';
+  // 是/否 绿色样式
+  xml += '<Style ss:ID="sYes"><Font ss:FontName="Microsoft YaHei" ss:Size="11" ss:Bold="1" ss:Color="#166534"/><Interior ss:Color="#DCFCE7" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Alignment ss:Horizontal="Center" ss:Vertical="Center"/></Style>\n';
+  // 是/否 灰色样式
+  xml += '<Style ss:ID="sNo"><Font ss:FontName="Microsoft YaHei" ss:Size="11" ss:Color="#94A3B8"/><Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Alignment ss:Horizontal="Center" ss:Vertical="Center"/></Style>\n';
+  xml += '</Styles>\n';
+
+  // ===== Sheet1: 客户基本信息 =====
+  xml += '<Worksheet ss:Name="客户基本信息">\n';
+  xml += '<Table ss:DefaultColumnWidth="120" ss:DefaultRowHeight="28">\n';
+
+  // 列宽设置
+  var colWidths = [80, 60, 180, 130, 150, 180, 80, 80, 80, 80, 60, 150, 120, 100, 200, 100, 80, 200];
+  for (var cw = 0; cw < colWidths.length; cw++) {
+    xml += '<Column ss:Width="' + colWidths[cw] + '"/>\n';
+  }
+
+  // 标题行 (合并17列)
+  xml += '<Row ss:Height="40"><Cell ss:MergeAcross="' + (custHeaders.length - 1) + '" ss:StyleID="sTitle"><Data ss:Type="String">' + xmlEsc(title) + '来源客户真实情况</Data></Cell></Row>\n';
+
+  // 表头行
+  xml += '<Row ss:Height="32">';
+  for (var hi = 0; hi < custHeaders.length; hi++) {
+    xml += '<Cell ss:StyleID="sHeader"><Data ss:Type="String">' + xmlEsc(custHeaders[hi]) + '</Data></Cell>';
+  }
+  xml += '</Row>\n';
+
+  // 数据行
+  for (var ci = 0; ci < customers.length; ci++) {
+    var c = customers[ci];
+    var fups = fupMap[c.id];
+    var targetEq = (Array.isArray(c.targetEquipment) ? c.targetEquipment.join('、') : c.targetEquipment) || '';
+    var typeLabel = c.customerType === 'distributor' ? '经销商' : c.customerType === 'end_user' ? '终端客户' : '';
+    var wabReply = checkFirstReply(fups, 'whatsapp');
+    var mailReply = checkFirstReply(fups, '邮件');
+    var rowStyle = (ci % 2 === 0) ? 'sRow1' : 'sRow2';
+    var yesStyle = 'sYes';
+    var noStyle = 'sNo';
+
+    xml += '<Row ss:Height="26">';
+    xml += '<Cell ss:StyleID="' + rowStyle + '"><Data ss:Type="String">' + xmlEsc(c.contactPerson) + '</Data></Cell>';
+    xml += '<Cell ss:StyleID="' + rowStyle + '"><Data ss:Type="String">' + xmlEsc(c.country) + '</Data></Cell>';
+    xml += '<Cell ss:StyleID="' + rowStyle + '"><Data ss:Type="String">' + xmlEsc(c.email) + '</Data></Cell>';
+    xml += '<Cell ss:StyleID="' + rowStyle + '"><Data ss:Type="String">' + xmlEsc(c.whatsapp) + '</Data></Cell>';
+    xml += '<Cell ss:StyleID="' + rowStyle + '"><Data ss:Type="String">' + xmlEsc(c.name) + '</Data></Cell>';
+    xml += '<Cell ss:StyleID="' + rowStyle + '"><Data ss:Type="String">' + xmlEsc(c.website) + '</Data></Cell>';
+    xml += '<Cell ss:StyleID="' + (wabReply === '是' ? yesStyle : noStyle) + '"><Data ss:Type="String">' + xmlEsc(wabReply) + '</Data></Cell>';
+    xml += '<Cell ss:StyleID="' + (mailReply === '是' ? yesStyle : noStyle) + '"><Data ss:Type="String">' + xmlEsc(mailReply) + '</Data></Cell>';
+    xml += '<Cell ss:StyleID="' + rowStyle + '"><Data ss:Type="String">' + xmlEsc(typeLabel) + '</Data></Cell>';
+    xml += '<Cell ss:StyleID="' + rowStyle + '"><Data ss:Type="String">' + xmlEsc(c.stage) + '</Data></Cell>';
+    xml += '<Cell ss:StyleID="' + rowStyle + '"><Data ss:Type="String">' + xmlEsc(c.priority) + '</Data></Cell>';
+    xml += '<Cell ss:StyleID="' + rowStyle + '"><Data ss:Type="String">' + xmlEsc(targetEq) + '</Data></Cell>';
+    xml += '<Cell ss:StyleID="' + rowStyle + '"><Data ss:Type="String">' + xmlEsc(c.equipmentSpecs) + '</Data></Cell>';
+    xml += '<Cell ss:StyleID="' + rowStyle + '"><Data ss:Type="String">' + xmlEsc(c.budget) + '</Data></Cell>';
+    xml += '<Cell ss:StyleID="' + rowStyle + '"><Data ss:Type="String">' + xmlEsc(c.corePainPoints) + '</Data></Cell>';
+    xml += '<Cell ss:StyleID="' + rowStyle + '"><Data ss:Type="String">' + xmlEsc(c.firstContactDate) + '</Data></Cell>';
+    xml += '<Cell ss:StyleID="' + rowStyle + '"><Data ss:Type="String">' + xmlEsc(c.companySize) + '</Data></Cell>';
+    xml += '<Cell ss:StyleID="' + rowStyle + '"><Data ss:Type="String">' + xmlEsc(c.notes) + '</Data></Cell>';
+    xml += '</Row>\n';
+  }
+  xml += '</Table>\n';
+  xml += '</Worksheet>\n';
+
+  // ===== Sheet2: 跟进记录 =====
+  xml += '<Worksheet ss:Name="跟进记录">\n';
+  xml += '<Table ss:DefaultColumnWidth="120" ss:DefaultRowHeight="28">\n';
+
+  var fupColWidths = [150, 100, 80, 300, 200, 100];
+  for (var fcw = 0; fcw < fupColWidths.length; fcw++) {
+    xml += '<Column ss:Width="' + fupColWidths[fcw] + '"/>\n';
+  }
+
+  var fupHeaders = ['客户名称', '日期', '沟通方式', '跟进内容', '下一步行动', '下次跟进日期'];
+  xml += '<Row ss:Height="40"><Cell ss:MergeAcross="' + (fupHeaders.length - 1) + '" ss:StyleID="sTitle"><Data ss:Type="String">📝 跟进记录（共 ' + filteredFups.length + ' 条）</Data></Cell></Row>\n';
+
+  xml += '<Row ss:Height="32">';
+  for (var hi2 = 0; hi2 < fupHeaders.length; hi2++) {
+    xml += '<Cell ss:StyleID="sHeader"><Data ss:Type="String">' + xmlEsc(fupHeaders[hi2]) + '</Data></Cell>';
+  }
+  xml += '</Row>\n';
+
+  var custNameMap = {};
+  for (var ci2 = 0; ci2 < customers.length; ci2++) {
+    custNameMap[customers[ci2].id] = customers[ci2].name || '';
+  }
+
+  for (var fi2 = 0; fi2 < filteredFups.length; fi2++) {
+    var f2 = filteredFups[fi2];
+    var fupRowStyle = (fi2 % 2 === 0) ? 'sRow1' : 'sRow2';
+    xml += '<Row ss:Height="26">';
+    xml += '<Cell ss:StyleID="' + fupRowStyle + '"><Data ss:Type="String">' + xmlEsc(custNameMap[f2.customerId] || '') + '</Data></Cell>';
+    xml += '<Cell ss:StyleID="' + fupRowStyle + '"><Data ss:Type="String">' + xmlEsc(f2.date) + '</Data></Cell>';
+    xml += '<Cell ss:StyleID="' + fupRowStyle + '"><Data ss:Type="String">' + xmlEsc(f2.method) + '</Data></Cell>';
+    xml += '<Cell ss:StyleID="' + fupRowStyle + '"><Data ss:Type="String">' + xmlEsc(f2.content) + '</Data></Cell>';
+    xml += '<Cell ss:StyleID="' + fupRowStyle + '"><Data ss:Type="String">' + xmlEsc(f2.nextAction) + '</Data></Cell>';
+    xml += '<Cell ss:StyleID="' + fupRowStyle + '"><Data ss:Type="String">' + xmlEsc(f2.nextFollowUpDate) + '</Data></Cell>';
+    xml += '</Row>\n';
+  }
+
+  xml += '</Table>\n';
+  xml += '</Worksheet>\n';
+  xml += '</Workbook>';
+
+  // 下载为 .xls 文件（Excel XML 格式，双击即打开）
+  var filename = source ? 'carton-crm-' + source + '-' + dateStr + '.xls' : 'carton-crm-customers-' + dateStr + '.xls';
+  var blob = new Blob(['\uFEFF' + xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  localStorage.setItem('carton_crm_last_backup', Utils.today());
+  Utils.toast('已导出 ' + title + '：' + customers.length + ' 个客户 + ' + filteredFups.length + ' 条跟进');
+}
+
+// 导出客户信息 + 跟进记录为 Excel (CSV) — 兼容旧的批量导出
 function exportExcel() {
   const data = Storage.get();
   const customers = data.customers || [];
@@ -6944,6 +8116,560 @@ function simEnd() {
   openModal(html);
   simState = null;
 }
+
+/* ==================== 地图看板 v3 (ECharts + Apple Design) ==================== */
+// ECharts 世界地图 nameMap：英文名 → 中文名
+const _EC_NAME_MAP = {
+  // 东亚
+  'China':'中国','Korea':'韩国','Dem. Rep. Korea':'朝鲜','Mongolia':'蒙古','Japan':'日本',
+  // 东南亚
+  'Vietnam':'越南','Thailand':'泰国','Philippines':'菲律宾','Malaysia':'马来西亚',
+  'Indonesia':'印度尼西亚','Singapore':'新加坡','Cambodia':'柬埔寨','Lao PDR':'老挝',
+  'Myanmar':'缅甸','Timor-Leste':'东帝汶','Brunei':'文莱',
+  // 南亚
+  'India':'印度','Pakistan':'巴基斯坦','Bangladesh':'孟加拉国',
+  'Sri Lanka':'斯里兰卡','Nepal':'尼泊尔','Bhutan':'不丹',
+  // 中亚
+  'Kazakhstan':'哈萨克斯坦','Uzbekistan':'乌兹别克斯坦','Tajikistan':'塔吉克斯坦',
+  'Kyrgyzstan':'吉尔吉斯斯坦','Turkmenistan':'土库曼斯坦',
+  // 中东
+  'United Arab Emirates':'阿联酋','Saudi Arabia':'沙特阿拉伯','Qatar':'卡塔尔',
+  'Kuwait':'科威特','Oman':'阿曼','Bahrain':'巴林','Yemen':'也门',
+  'Iran':'伊朗','Iraq':'伊拉克','Syria':'叙利亚','Jordan':'约旦',
+  'Lebanon':'黎巴嫩','Israel':'以色列','Palestine':'巴勒斯坦',
+  // 土耳其
+  'Turkey':'土耳其','Azerbaijan':'阿塞拜疆','Armenia':'亚美尼亚','Georgia':'格鲁吉亚',
+  // 欧洲
+  'Russia':'俄罗斯','United Kingdom':'英国','France':'法国','Germany':'德国',
+  'Italy':'意大利','Spain':'西班牙','Portugal':'葡萄牙','Netherlands':'荷兰','Belgium':'比利时',
+  'Switzerland':'瑞士','Poland':'波兰','Sweden':'瑞典','Finland':'芬兰','Denmark':'丹麦',
+  'Norway':'挪威','Iceland':'冰岛','Ireland':'爱尔兰',
+  'Greece':'希腊','Austria':'奥地利','Hungary':'匈牙利','Czech Rep.':'捷克',
+  'Slovakia':'斯洛伐克','Romania':'罗马尼亚','Bulgaria':'保加利亚',
+  'Ukraine':'乌克兰','Belarus':'白俄罗斯','Moldova':'摩尔多瓦',
+  'Croatia':'克罗地亚','Serbia':'塞尔维亚','Slovenia':'斯洛文尼亚',
+  'Estonia':'爱沙尼亚','Latvia':'拉脱维亚','Lithuania':'立陶宛',
+  'Luxembourg':'卢森堡','Cyprus':'塞浦路斯','Malta':'马耳他',
+  // 北美
+  'United States':'美国','Canada':'加拿大','Mexico':'墨西哥',
+  // 南美
+  'Brazil':'巴西','Argentina':'阿根廷','Chile':'智利','Colombia':'哥伦比亚','Peru':'秘鲁',
+  'Venezuela':'委内瑞拉','Ecuador':'厄瓜多尔','Bolivia':'玻利维亚',
+  'Uruguay':'乌拉圭','Paraguay':'巴拉圭',
+  // 中美洲
+  'Costa Rica':'哥斯达黎加','Panama':'巴拿马','Cuba':'古巴',
+  'Guatemala':'危地马拉','Honduras':'洪都拉斯','El Salvador':'萨尔瓦多',
+  // 大洋洲
+  'Australia':'澳大利亚','New Zealand':'新西兰',
+  // 非洲
+  'Egypt':'埃及','South Africa':'南非','Nigeria':'尼日利亚',
+  'Kenya':'肯尼亚','Ethiopia':'埃塞俄比亚','Tanzania':'坦桑尼亚',
+  'Morocco':'摩洛哥','Algeria':'阿尔及利亚','Tunisia':'突尼斯',
+  'Libya':'利比亚','Sudan':'苏丹','S. Sudan':'南苏丹',
+  'Ghana':'加纳','Uganda':'乌干达','Angola':'安哥拉',
+  'Zambia':'赞比亚','Zimbabwe':'津巴布韦','Mozambique':'莫桑比克',
+  'Cameroon':'喀麦隆','Senegal':'塞内加尔','Côte d\'Ivoire':'科特迪瓦',
+  'Mauritius':'毛里求斯'
+};
+
+// 中文名→英文名反查
+const _EC_NAME_REV = {};
+Object.entries(_EC_NAME_MAP).forEach(([en,cn]) => { _EC_NAME_REV[cn] = en; });
+
+// ==================== 数据获取与过滤 ====================
+let _mapChart = null, _mapViewMode = 'count';
+
+function _getMapCustomers() {
+  const raw = Storage.getCustomers();
+  if (!Array.isArray(raw)) return [];
+  return raw.map(c => {
+    let createdAt = '';
+    if (c.createdAt) {
+      try { createdAt = new Date(c.createdAt).toISOString().split('T')[0]; } catch(e) {}
+    }
+    return {
+      name: c.name || c.company || '未知客户',
+      country: (c.country || '未知').trim(),
+      city: c.city || '',
+      contact: c.contact || '',
+      stage: c.stage || c.status || '潜在客户',
+      source: c.source || '',
+      createdAt: createdAt,
+      amount: parseFloat(c.amount || c.totalAmount || 0)
+    };
+  });
+}
+
+function _getFilteredCustomers() {
+  let customers = _getMapCustomers();
+  const timeEl = document.getElementById('map-time-filter');
+  const statusEl = document.getElementById('map-status-filter');
+  const searchEl = document.getElementById('map-search-input');
+  if (!timeEl) return customers;
+
+  const timeFilter = timeEl.value || 'all';
+  const statusFilter = statusEl ? (statusEl.value || 'all') : 'all';
+  const searchQuery = searchEl ? (searchEl.value || '').trim().toLowerCase() : '';
+
+  const now = new Date();
+  if (timeFilter === 'today') {
+    const today = now.toISOString().split('T')[0];
+    customers = customers.filter(c => c.createdAt >= today);
+  } else if (timeFilter === 'week') {
+    const d = new Date(now - 7*86400000).toISOString().split('T')[0];
+    customers = customers.filter(c => c.createdAt >= d);
+  } else if (timeFilter === 'month') {
+    const d = new Date(now - 30*86400000).toISOString().split('T')[0];
+    customers = customers.filter(c => c.createdAt >= d);
+  } else if (timeFilter === 'quarter') {
+    const d = new Date(now - 90*86400000).toISOString().split('T')[0];
+    customers = customers.filter(c => c.createdAt >= d);
+  } else if (timeFilter === 'year') {
+    const d = new Date(now - 365*86400000).toISOString().split('T')[0];
+    customers = customers.filter(c => c.createdAt >= d);
+  }
+
+  if (statusFilter === 'active') { customers = customers.filter(c => c.stage !== '已流失'); }
+  else if (statusFilter === 'lost') { customers = customers.filter(c => c.stage === '已流失'); }
+
+  if (searchQuery) {
+    customers = customers.filter(c =>
+      (c.name || '').toLowerCase().includes(searchQuery) ||
+      (c.country || '').toLowerCase().includes(searchQuery) ||
+      (c.city || '').toLowerCase().includes(searchQuery) ||
+      (c.contact || '').toLowerCase().includes(searchQuery)
+    );
+  }
+  return customers;
+}
+
+function _buildCountryMap(customers) {
+  const map = {};
+  customers.forEach(c => {
+    const cn = c.country;
+    if (!map[cn]) map[cn] = { count: 0, totalAmount: 0 };
+    map[cn].count++;
+    map[cn].totalAmount += (c.amount || 0);
+  });
+  return map;
+}
+
+// ==================== Router.renderMap ====================
+Router.renderMap = function(content, title, subtitle, actions) {
+  title.textContent = '全球客户地图';
+  subtitle.textContent = '纸箱机械客户全球分布';
+  actions.innerHTML = '';
+
+  const customers = _getFilteredCustomers();
+  const countryMap = _buildCountryMap(customers);
+  const countryCount = Object.keys(countryMap).length;
+
+  // 统计
+  const now = new Date();
+  const monthAgo = new Date(now - 30*86400000).toISOString().split('T')[0];
+  const monthlyNew = customers.filter(c => c.createdAt >= monthAgo).length;
+  const avgPerCountry = countryCount > 0 ? (customers.length / countryCount).toFixed(1) : '0';
+
+  const twoMonthAgo = new Date(now - 60*86400000).toISOString().split('T')[0];
+  const lastMonthNew = _getMapCustomers().filter(c => c.createdAt >= twoMonthAgo && c.createdAt < monthAgo).length;
+  const growthPct = lastMonthNew > 0 ? Math.round((monthlyNew - lastMonthNew) / lastMonthNew * 100) : (monthlyNew > 0 ? 100 : 0);
+  const trendText = growthPct >= 0 ? '<span class="map-stat-trend up">↑ ' + Math.abs(growthPct) + '%</span>' : '<span class="map-stat-trend down">↓ ' + Math.abs(growthPct) + '%</span>';
+
+  content.innerHTML = `
+    <div class="map-stats">
+      <div class="map-stat-card" onclick="_switchMapView('count')" id="map-stat-total">
+        <div class="map-stat-icon" style="background:#E3F2FD;"><svg viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+        <div><div class="map-stat-num">${customers.length}</div><div class="map-stat-label">全球客户总数</div>${trendText}</div>
+      </div>
+      <div class="map-stat-card" onclick="_switchMapView('count')" id="map-stat-countries">
+        <div class="map-stat-icon" style="background:#E8F5E9;"><svg viewBox="0 0 24 24" fill="none" stroke="#34C759" stroke-width="2"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/><line x1="12" y1="22" x2="12" y2="15.5"/></svg></div>
+        <div><div class="map-stat-num">${countryCount}</div><div class="map-stat-label">覆盖国家/地区</div></div>
+      </div>
+      <div class="map-stat-card" onclick="_switchMapView('amount')" id="map-stat-monthly">
+        <div class="map-stat-icon" style="background:#FFF3E0;"><svg viewBox="0 0 24 24" fill="none" stroke="#FF9500" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div>
+        <div><div class="map-stat-num">${monthlyNew}</div><div class="map-stat-label">本月新增客户</div></div>
+      </div>
+      <div class="map-stat-card" onclick="_switchMapView('growth')" id="map-stat-avg">
+        <div class="map-stat-icon" style="background:#F3E8FF;"><svg viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+        <div><div class="map-stat-num">${avgPerCountry}</div><div class="map-stat-label">平均每国客户</div></div>
+      </div>
+    </div>
+    <div class="map-filter-bar">
+      <select id="map-time-filter" onchange="_mapApplyFilters()">
+        <option value="all">全部时间</option><option value="today">今日</option><option value="week">本周</option>
+        <option value="month">本月</option><option value="quarter">本季度</option><option value="year">本年</option>
+      </select>
+      <select id="map-status-filter" onchange="_mapApplyFilters()">
+        <option value="all">全部状态</option><option value="active">活跃客户</option><option value="lost">流失客户</option>
+      </select>
+      <input type="text" id="map-search-input" placeholder="搜索客户或国家..." oninput="_mapApplyFilters()" style="flex:1;min-width:160px;max-width:260px;padding:7px 12px;border-radius:8px;border:1px solid rgba(0,0,0,0.1);background:var(--card);font-size:12px;color:var(--text-primary);outline:none;font-family:inherit;">
+      <button class="map-filter-btn ghost" onclick="_mapResetFilters()">重置</button>
+      <button class="map-filter-btn primary" onclick="exportMapData()" style="margin-left:auto;">导出数据</button>
+    </div>
+    <div class="map-grid">
+      <div class="map-echarts-card">
+        <div class="map-echarts-inner" id="map-echarts-container"></div>
+        <div class="map-zoom-controls">
+          <button class="map-zoom-btn" onclick="_mapZoomIn()" title="放大">+</button>
+          <button class="map-zoom-btn" onclick="_mapZoomOut()" title="缩小">−</button>
+          <button class="map-zoom-btn" onclick="_mapZoomReset()" title="重置">⌂</button>
+        </div>
+        <div class="map-legend-h"><span>少</span><div class="map-legend-gradient"></div><span>多</span></div>
+      </div>
+      <div class="map-country-card" id="map-country-panel"></div>
+    </div>
+    <div class="map-data-table-wrap" id="map-table-wrap"></div>
+  `;
+
+  _renderCountryPanel(countryMap, customers);
+  _renderMapTable(customers);
+  setTimeout(() => { _initEchartsMap(customers, countryMap); }, 100);
+  _updateStatActive();
+};
+
+// ==================== ECharts 地图 ====================
+function _initEchartsMap(customers, countryMap) {
+  const dom = document.getElementById('map-echarts-container');
+  if (!dom) return;
+
+  // 销毁旧实例
+  if (_mapChart) { _mapChart.dispose(); _mapChart = null; }
+
+  // 检查 ECharts 是否加载
+  if (typeof echarts === 'undefined') {
+    dom.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-secondary);font-size:13px;">ECharts 加载中...</div>';
+    setTimeout(() => _initEchartsMap(customers, countryMap), 500);
+    return;
+  }
+
+  // 检查世界地图数据是否已注册，未注册则动态加载 world-map-data.js
+  if (!echarts.getMap || !echarts.getMap('world')) {
+    if (!window._worldMapLoading) {
+      window._worldMapLoading = true;
+      dom.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-secondary);font-size:13px;">地图数据加载中...</div>';
+      var s = document.createElement('script');
+      s.src = 'world-map-data.js';
+      s.onload = function() { window._worldMapLoading = false; _initEchartsMap(customers, countryMap); };
+      s.onerror = function() { window._worldMapLoading = false; dom.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#FF3B30;font-size:13px;">地图数据加载失败，请刷新重试</div>'; };
+      document.head.appendChild(s);
+    } else {
+      dom.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-secondary);font-size:13px;">地图数据加载中...</div>';
+      setTimeout(function() { _initEchartsMap(customers, countryMap); }, 300);
+    }
+    return;
+  }
+
+  _mapChart = echarts.init(dom);
+
+  _mapChart.on('click', function(params) {
+    if (params.name && _EC_NAME_MAP[params.name]) {
+      _selectCountry(_EC_NAME_MAP[params.name]);
+    }
+  });
+
+  _updateEchartsOption(customers, countryMap);
+}
+
+function _updateEchartsOption(customers, countryMap) {
+  if (!_mapChart) return;
+
+  const mapData = [];
+  let maxVal = 1;
+  Object.entries(countryMap).forEach(([cn, d]) => {
+    const en = _EC_NAME_REV[cn];
+    if (!en) return;
+    const val = _mapViewMode === 'amount' ? d.totalAmount : d.count;
+    mapData.push({ name: en, value: val });
+    if (val > maxVal) maxVal = val;
+  });
+
+  // 无数据国家填0
+  Object.keys(_EC_NAME_MAP).forEach(en => {
+    if (!mapData.find(d => d.name === en)) {
+      mapData.push({ name: en, value: 0 });
+    }
+  });
+
+  const isDark = document.body.classList.contains('dark-mode');
+  const textColor = isDark ? '#FFFFFF' : '#1D1D1F';
+  const borderColor = isDark ? '#3A3A3C' : '#FFFFFF';
+
+  _mapChart.setOption({
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: 'rgba(29,29,31,0.92)',
+      borderColor: 'transparent',
+      borderRadius: 12,
+      padding: [10, 14],
+      textStyle: { color: '#fff', fontSize: 12 },
+      formatter: function(p) {
+        const cn = _EC_NAME_MAP[p.name] || p.name;
+        const val = p.value || 0;
+        return '<div style="font-weight:600;font-size:13px;margin-bottom:3px">'+cn+'</div>'
+          + '<div style="font-size:10px;opacity:0.8">' + (_mapViewMode === 'amount' ? '订单总额' : '客户数') + ': <b>'+val+'</b></div>';
+      }
+    },
+    visualMap: {
+      min: 0, max: maxVal, left: 'left', bottom: 10, calculable: false, show: false,
+      inRange: { color: ['#F2F2F7','#E3F2FD','#90CAF9','#42A5F5','#1E88E5','#0D47A1'] }
+    },
+    series: [{
+      name: '客户分布', type: 'map', map: 'world', roam: true,
+      scaleLimit: { min: 1, max: 20 }, zoom: 1.2, center: [15, 25],
+      label: { show: true, fontSize: 7, color: textColor, fontFamily: '-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif', formatter: function(p) { return _EC_NAME_MAP[p.name] || p.name; } },
+      emphasis: {
+        label: { show: true, fontSize: 11, fontWeight: 'bold' },
+        itemStyle: { areaColor: '#1E88E5', borderColor: '#007AFF', borderWidth: 2 }
+      },
+      select: {
+        label: { show: true, fontWeight: 'bold' },
+        itemStyle: { areaColor: '#0D47A1', borderColor: '#007AFF', borderWidth: 2 }
+      },
+      itemStyle: { borderColor: borderColor, borderWidth: 1, borderType: 'solid', areaColor: '#F2F2F7' },
+      data: mapData
+    }]
+  }, true);
+}
+
+// ==================== 国家选择 ====================
+function _selectCountry(cn) {
+  // 侧边栏高亮
+  document.querySelectorAll('.map-country-item').forEach(el => el.classList.remove('active'));
+  const item = document.querySelector('.map-country-item[data-country="'+cn+'"]');
+  if (item) { item.classList.add('active'); item.scrollIntoView({ behavior:'smooth', block:'center' }); }
+
+  // ECharts 高亮
+  if (_mapChart) {
+    const en = _EC_NAME_REV[cn] || cn;
+    _mapChart.dispatchAction({ type: 'highlight', seriesName: '客户分布', name: en });
+    _mapChart.dispatchAction({ type: 'showTip', seriesIndex: 0, name: en });
+  }
+
+  // 搜索框填入国家名
+  const searchEl = document.getElementById('map-search-input');
+  if (searchEl) searchEl.value = cn;
+  _mapApplyFilters();
+}
+
+// ==================== 统计卡片视图切换 ====================
+function _switchMapView(mode) {
+  _mapViewMode = mode;
+  _updateStatActive();
+  const customers = _getFilteredCustomers();
+  const countryMap = _buildCountryMap(customers);
+  if (_mapChart) _updateEchartsOption(customers, countryMap);
+}
+
+function _updateStatActive() {
+  ['total','countries','monthly','avg'].forEach((id, i) => {
+    const modes = ['count','count','amount','growth'];
+    const el = document.getElementById('map-stat-'+id);
+    if (el) el.classList.toggle('active', _mapViewMode === modes[i]);
+  });
+}
+
+// ==================== 缩放控制 ====================
+function _mapZoomIn() {
+  if (!_mapChart) return;
+  const opt = _mapChart.getOption();
+  const zoom = (opt.series && opt.series[0] && opt.series[0].zoom) || 1.2;
+  _mapChart.setOption({ series: [{ zoom: Math.min(zoom * 1.3, 20) }] });
+}
+function _mapZoomOut() {
+  if (!_mapChart) return;
+  const opt = _mapChart.getOption();
+  const zoom = (opt.series && opt.series[0] && opt.series[0].zoom) || 1.2;
+  _mapChart.setOption({ series: [{ zoom: Math.max(zoom / 1.3, 1) }] });
+}
+function _mapZoomReset() {
+  if (_mapChart) {
+    _mapChart.dispatchAction({ type: 'restore' });
+    _mapChart.setOption({ series: [{ zoom: 1.2, center: [15, 25] }] });
+  }
+}
+
+// ==================== 筛选控制 ====================
+function _mapApplyFilters() {
+  const customers = _getFilteredCustomers();
+  const countryMap = _buildCountryMap(customers);
+  _renderCountryPanel(countryMap, customers);
+  _renderMapTable(customers);
+  if (_mapChart) _updateEchartsOption(customers, countryMap);
+}
+
+function _mapResetFilters() {
+  const timeEl = document.getElementById('map-time-filter');
+  const statusEl = document.getElementById('map-status-filter');
+  const searchEl = document.getElementById('map-search-input');
+  if (timeEl) timeEl.value = 'all';
+  if (statusEl) statusEl.value = 'all';
+  if (searchEl) searchEl.value = '';
+  _mapApplyFilters();
+}
+
+// ==================== 国家排名面板 ====================
+function _renderCountryPanel(countryMap, customers) {
+  const panel = document.getElementById('map-country-panel');
+  if (!panel) return;
+  const entries = Object.entries(countryMap).sort((a, b) => b[1].count - a[1].count);
+  const maxCount = entries.length > 0 ? entries[0][1].count : 1;
+
+  panel.innerHTML = `
+    <div class="map-country-header">
+      <span class="map-country-title">国家分布</span>
+      <span class="map-country-count">${entries.length} 个国家</span>
+    </div>
+    <div class="map-country-list">
+      ${entries.map(([cn, d], i) => {
+        const badge = i===0 ? '<span class="map-hot-label t1">TOP1</span>' :
+                       i===1 ? '<span class="map-hot-label t2">TOP2</span>' :
+                       i===2 ? '<span class="map-hot-label t3">TOP3</span>' : '';
+        const flag = _getFlag(cn);
+        return '<div class="map-country-item" data-country="'+Utils.escapeHtml(cn)+'" onclick="_selectCountry(\''+Utils.escapeHtml(cn)+'\')">'
+          + '<div class="map-country-flag">'+flag+'</div>'
+          + '<div class="map-country-name">'+Utils.escapeHtml(cn)+'</div>'
+          + badge
+          + '<div class="map-country-bar"><div class="map-country-bar-fill" style="width:'+(d.count/maxCount*100).toFixed(0)+'%"></div></div>'
+          + '<div class="map-country-num">'+d.count+'</div></div>';
+      }).join('')}
+    </div>
+  `;
+}
+
+// ==================== 数据表格 ====================
+let _tableSort = { col: null, asc: true }, _tablePage = 1;
+const _TABLE_PAGE_SIZE = 20;
+
+function _renderMapTable(customers) {
+  const wrap = document.getElementById('map-table-wrap');
+  if (!wrap) return;
+
+  const searchQuery = (document.getElementById('map-table-search-input')?.value || '').trim().toLowerCase();
+  let filtered = customers;
+  if (searchQuery) {
+    filtered = customers.filter(c =>
+      (c.name||'').toLowerCase().includes(searchQuery) ||
+      (c.country||'').toLowerCase().includes(searchQuery) ||
+      (c.city||'').toLowerCase().includes(searchQuery)
+    );
+  }
+
+  if (_tableSort.col) {
+    filtered = [...filtered].sort((a,b) => {
+      const va = a[_tableSort.col] || '', vb = b[_tableSort.col] || '';
+      const cmp = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb), 'zh-CN');
+      return _tableSort.asc ? cmp : -cmp;
+    });
+  }
+
+  const totalPages = Math.ceil(filtered.length / _TABLE_PAGE_SIZE) || 1;
+  if (_tablePage > totalPages) _tablePage = totalPages;
+  const start = (_tablePage - 1) * _TABLE_PAGE_SIZE;
+  const page = filtered.slice(start, start + _TABLE_PAGE_SIZE);
+
+  const cols = [
+    { key:'name', label:'客户名称' }, { key:'country', label:'国家/地区' },
+    { key:'city', label:'城市' }, { key:'contact', label:'联系人' },
+    { key:'stage', label:'阶段' }, { key:'source', label:'来源' }, { key:'createdAt', label:'创建日期' }
+  ];
+
+  const headerHtml = cols.map(c => {
+    const sorted = _tableSort.col === c.key;
+    return '<th class="'+ (sorted ? 'sorted' : '') +'" onclick="_mapSortTable(\''+c.key+'\')">'
+      + c.label + (sorted ? '<span class="sort-arrow">'+(_tableSort.asc?'▲':'▼')+'</span>' : '') + '</th>';
+  }).join('');
+
+  const bodyHtml = page.length > 0 ? page.map(c => {
+    const stageClass = (c.stage==='潜在客户'?'potential':c.stage==='意向明确'?'interested':c.stage==='报价中'?'quoting':c.stage==='谈判中'?'negotiating':c.stage==='样品确认'?'sample':c.stage==='已成交'?'closed':c.stage==='已流失'?'lost':'potential');
+    const flag = _getFlag(c.country);
+    return '<tr onclick="_selectCountry(\''+Utils.escapeHtml(c.country)+'\')">'
+      + '<td>'+Utils.escapeHtml(c.name)+'</td>'
+      + '<td>'+flag+' '+Utils.escapeHtml(c.country)+'</td>'
+      + '<td>'+Utils.escapeHtml(c.city)+'</td>'
+      + '<td>'+Utils.escapeHtml(c.contact)+'</td>'
+      + '<td><span class="stage-tag '+stageClass+'">'+Utils.escapeHtml(c.stage)+'</span></td>'
+      + '<td>'+Utils.escapeHtml(c.source)+'</td>'
+      + '<td>'+Utils.escapeHtml(c.createdAt)+'</td></tr>';
+  }).join('') : '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-secondary);">没有找到匹配的客户</td></tr>';
+
+  const pagHtml = totalPages > 1 ? `
+    <div class="map-pagination">
+      <button class="map-page-btn" onclick="_mapGoPage('+(_tablePage-1)+')" '+(_tablePage===1?'disabled':'')+'>‹</button>
+      ${(()=>{let h='';for(let p=1;p<=Math.min(totalPages,7);p++)h+='<button class="map-page-btn '+(p===_tablePage?'active':'')+'" onclick="_mapGoPage('+p+')">'+p+'</button>';return h;})()}
+      <span class="map-page-info">${_tablePage}/${totalPages} 页</span>
+      <button class="map-page-btn" onclick="_mapGoPage('+(_tablePage+1)+')" '+(_tablePage===totalPages?'disabled':'')+'>›</button>
+    </div>` : '';
+
+  wrap.innerHTML = `
+    <div class="map-data-table-header">
+      <span class="map-data-table-title">客户详情 (${filtered.length})</span>
+      <input type="text" class="map-data-table-search" id="map-table-search-input" placeholder="搜索..." oninput="_tablePage=1;_renderMapTable(_getFilteredCustomers())">
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="map-data-table"><thead><tr>${headerHtml}</tr></thead><tbody>${bodyHtml}</tbody></table>
+    </div>
+    ${pagHtml}
+  `;
+}
+
+function _mapSortTable(col) {
+  if (_tableSort.col === col) { _tableSort.asc = !_tableSort.asc; }
+  else { _tableSort.col = col; _tableSort.asc = true; }
+  _tablePage = 1;
+  _renderMapTable(_getFilteredCustomers());
+}
+
+function _mapGoPage(p) {
+  const filtered = _getFilteredCustomers();
+  const totalPages = Math.ceil(filtered.length / _TABLE_PAGE_SIZE) || 1;
+  if (p >= 1 && p <= totalPages) { _tablePage = p; _renderMapTable(filtered); }
+}
+
+// ==================== Export ====================
+window.exportMapData = function() {
+  const customers = _getFilteredCustomers();
+  const countryMap = _buildCountryMap(customers);
+  const cl = Object.entries(countryMap).sort((a, b) => b[1].count - a[1].count);
+  const xls = '<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">'
+    + '<Styles><Style ss:ID="h"><Font ss:FontName="PingFang SC" ss:Bold="1"/><Interior ss:Color="#F2F2F7"/></Style></Styles>'
+    + '<Worksheet ss:Name="客户分布汇总"><Table>'
+    + '<Row><Cell ss:StyleID="h"><Data ss:Type="String">序号</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">国家/地区</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">客户数量</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">占比</Data></Cell></Row>'
+    + cl.map(([cn, d], i) => '<Row><Cell><Data ss:Type="Number">' + (i + 1) + '</Data></Cell><Cell><Data ss:Type="String">' + cn + '</Data></Cell><Cell><Data ss:Type="Number">' + d.count + '</Data></Cell><Cell><Data ss:Type="String">' + (d.count / customers.length * 100).toFixed(1) + '%</Data></Cell></Row>').join('')
+    + '</Table></Worksheet>'
+    + '<Worksheet ss:Name="客户明细"><Table>'
+    + '<Row><Cell ss:StyleID="h"><Data ss:Type="String">序号</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">客户名称</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">国家</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">城市</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">联系人</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">阶段</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">来源</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">创建日期</Data></Cell></Row>'
+    + customers.map((c, i) => '<Row><Cell><Data ss:Type="Number">' + (i + 1) + '</Data></Cell><Cell><Data ss:Type="String">' + (c.name || '') + '</Data></Cell><Cell><Data ss:Type="String">' + (c.country || '') + '</Data></Cell><Cell><Data ss:Type="String">' + (c.city || '') + '</Data></Cell><Cell><Data ss:Type="String">' + (c.contact || '') + '</Data></Cell><Cell><Data ss:Type="String">' + (c.stage || '') + '</Data></Cell><Cell><Data ss:Type="String">' + (c.source || '') + '</Data></Cell><Cell><Data ss:Type="String">' + (c.createdAt || '') + '</Data></Cell></Row>').join('')
+    + '</Table></Worksheet></Workbook>';
+  const blob = new Blob([xls], { type: 'application/vnd.ms-excel' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = '客户地图分布_' + new Date().toISOString().split('T')[0] + '.xls';
+  a.click();
+  URL.revokeObjectURL(url);
+  Utils.toast('✅ 地图数据已导出');
+};
+
+// ==================== 暗色模式适配 ECharts ====================
+(function() {
+  const origToggleDark = window.toggleDarkMode;
+  window.toggleDarkMode = function() {
+    if (origToggleDark) origToggleDark();
+    if (_mapChart) {
+      const customers = _getFilteredCustomers();
+      const countryMap = _buildCountryMap(customers);
+      _updateEchartsOption(customers, countryMap);
+    }
+  };
+})();
+
+
+// Helper: get country flag emoji
+function _getFlag(cn) {
+  const m = { '中国':'🇨🇳','中国台湾':'🇨🇳','日本':'🇯🇵','韩国':'🇰🇷','朝鲜':'🇰🇵','蒙古':'🇲🇳','印度':'🇮🇳','越南':'🇻🇳','泰国':'🇹🇭','菲律宾':'🇵🇭','马来西亚':'🇲🇾','印度尼西亚':'🇮🇩','新加坡':'🇸🇬','巴基斯坦':'🇵🇰','孟加拉国':'🇧🇩','缅甸':'🇲🇲','柬埔寨':'🇰🇭','老挝':'🇱🇦','斯里兰卡':'🇱🇰','尼泊尔':'🇳🇵','哈萨克斯坦':'🇰🇿','俄罗斯':'🇷🇺','英国':'🇬🇧','法国':'🇫🇷','德国':'🇩🇪','意大利':'🇮🇹','西班牙':'🇪🇸','葡萄牙':'🇵🇹','荷兰':'🇳🇱','比利时':'🇧🇪','瑞士':'🇨🇭','波兰':'🇵🇱','瑞典':'🇸🇪','挪威':'🇳🇴','芬兰':'🇫🇮','丹麦':'🇩🇰','希腊':'🇬🇷','土耳其':'🇹🇷','乌克兰':'🇺🇦','奥地利':'🇦🇹','罗马尼亚':'🇷🇴','捷克':'🇨🇿','匈牙利':'🇭🇺','美国':'🇺🇸','加拿大':'🇨🇦','墨西哥':'🇲🇽','巴西':'🇧🇷','阿根廷':'🇦🇷','智利':'🇨🇱','哥伦比亚':'🇨🇴','秘鲁':'🇵🇪','委内瑞拉':'🇻🇪','澳大利亚':'🇦🇺','新西兰':'🇳🇿','埃及':'🇪🇬','南非':'🇿🇦','尼日利亚':'🇳🇬','肯尼亚':'🇰🇪','埃塞俄比亚':'🇪🇹','摩洛哥':'🇲🇦','阿尔及利亚':'🇩🇿','沙特阿拉伯':'🇸🇦','阿联酋':'🇦🇪','伊朗':'🇮🇷','伊拉克':'🇮🇶','以色列':'🇮🇱','卡塔尔':'🇶🇦' };
+  return m[cn] || '🌐';
+}
+
 
 </script>
 <script src="js/carton-wiki-data.js"></script>
