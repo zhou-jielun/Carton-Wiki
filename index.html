@@ -1026,6 +1026,7 @@ const Storage = {
   load() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
+      console.log('[Storage.load] raw存在:', !!raw, raw ? 'size=' + (raw.length/1024).toFixed(1) + 'KB' : '无数据');
       if (raw) {
         this._data = JSON.parse(raw);
         // 确保所有字段存在
@@ -1051,15 +1052,17 @@ const Storage = {
       if (this._data && Array.isArray(this._data.materials)) {
         for (const m of this._data.materials) { delete m.base64; }
       }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this._data));
+      const jsonStr = JSON.stringify(this._data);
+      console.log('[Storage] 保存中, JSON大小:', (jsonStr.length/1024).toFixed(1) + 'KB, customers:', (this._data.customers||[]).length);
+      localStorage.setItem(STORAGE_KEY, jsonStr);
       return true;
     } catch(e) {
       if (e.name === 'QuotaExceededError' || (e.message && e.message.indexOf('quota') >= 0)) {
+        console.error('[Storage] 存储空间已满!', e);
         Utils.toast('存储空间已满，请导出备份后清空部分数据');
-        console.error('localStorage quota exceeded:', e);
       } else {
+        console.error('[Storage] 保存失败:', e);
         Utils.toast('保存失败：' + e.message);
-        console.error('Storage save error:', e);
       }
       return false;
     }
@@ -4705,14 +4708,17 @@ function exportExcel() {
 function importData(event) {
   const file = event.target.files[0];
   if (!file) return;
+  console.log('[导入] 开始导入文件:', file.name, file.size + 'bytes');
   const reader = new FileReader();
   reader.onload = function(e) {
     try {
       const raw = JSON.parse(e.target.result);
+      console.log('[导入] JSON解析成功, 顶层keys:', Object.keys(raw));
       const importCustomers = Array.isArray(raw.customers) ? raw.customers : (Array.isArray(raw) ? raw : []);
       const importFollowups = Array.isArray(raw.followups) ? raw.followups : [];
       const importQuotations = Array.isArray(raw.quotations) ? raw.quotations : [];
       const importSocialMedia = raw.socialMedia || null;
+      console.log('[导入] 客户:', importCustomers.length, '跟进:', importFollowups.length, '报价:', importQuotations.length);
 
       if (importCustomers.length === 0) {
         Utils.toast('文件中没有找到客户数据');
@@ -4721,6 +4727,7 @@ function importData(event) {
       }
 
       const existingCustomers = Storage.getCustomers();
+      console.log('[导入] 现有客户数:', existingCustomers.length);
       const skipped = [];
       let newCount = 0;
       let mergedCount = 0;
@@ -4821,16 +4828,22 @@ function importData(event) {
         quotationCount++;
       }
 
+      console.log('[导入] 去重完成, 新增:', newCount, '合并:', mergedCount, '跳过:', skipped.length);
+      console.log('[导入] 开始保存, 最终客户数:', existingCustomers.length);
+
       if (!Storage.setCustomers(existingCustomers)) {
+        console.error('[导入] 客户保存失败!');
         Utils.toast('客户数据保存失败，可能是存储空间已满。请先导出备份并清空部分数据后再试。');
         event.target.value = '';
         return;
       }
+      console.log('[导入] 客户保存成功');
       if (!Storage.setFollowups(existingFollowups)) {
-        // 客户已保存，跟进失败时提示但不回滚
+        console.warn('[导入] 跟进保存失败');
         Utils.toast('跟进记录保存失败（客户数据已保存）。可能是存储空间不足。');
       }
       if (!Storage.setQuotations(existingQuotations)) {
+        console.warn('[导入] 报价保存失败');
         Utils.toast('报价记录保存失败。可能是存储空间不足。');
       }
 
@@ -5697,6 +5710,7 @@ Router.renderHolidays = function(content, title, subtitle, actions) {
    ================================================================ */
 function init() {
   Storage.load();
+  console.log('[初始化] 客户数:', Storage.getCustomers().length, '跟进数:', Storage.getFollowups().length, 'JSON大小:', JSON.stringify(Storage.get()).length/1024 + 'KB');
   Router.init();
   updateBellBadge();
   initDarkMode();
