@@ -1052,15 +1052,16 @@ const Storage = {
         for (const m of this._data.materials) { delete m.base64; }
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this._data));
+      return true;
     } catch(e) {
-      if (e.name === 'QuotaExceededError' || e.message && e.message.indexOf('quota') >= 0) {
-        Utils.toast('存储空间已满，请导出备份后清空数据');
+      if (e.name === 'QuotaExceededError' || (e.message && e.message.indexOf('quota') >= 0)) {
+        Utils.toast('存储空间已满，请导出备份后清空部分数据');
         console.error('localStorage quota exceeded:', e);
       } else {
         Utils.toast('保存失败：' + e.message);
         console.error('Storage save error:', e);
       }
-      throw e;
+      return false;
     }
   },
   get() { return this._data || this.load(); },
@@ -1069,18 +1070,18 @@ const Storage = {
   getFollowups() { return this.get().followups; },
   getQuotations() { return this.get().quotations; },
   getTodoDone() { return this.get().todoDone || {}; },
-  setCustomers(v) { this.get().customers = v; this.save(); },
-  setFollowups(v) { this.get().followups = v; this.save(); },
-  setQuotations(v) { this.get().quotations = v; this.save(); },
-  setTodoDone(v) { this.get().todoDone = v; this.save(); },
+  setCustomers(v) { this.get().customers = v; return this.save(); },
+  setFollowups(v) { this.get().followups = v; return this.save(); },
+  setQuotations(v) { this.get().quotations = v; return this.save(); },
+  setTodoDone(v) { this.get().todoDone = v; return this.save(); },
   getSocialMedia() {
     let sm = this.get().socialMedia;
     if (!sm || Array.isArray(sm)) { sm = {schedules: [], drafts: [], posts: []}; this.get().socialMedia = sm; this.save(); }
     return sm;
   },
-  setSocialMedia(v) { this.get().socialMedia = v; this.save(); },
+  setSocialMedia(v) { this.get().socialMedia = v; return this.save(); },
   getConfig() { return this.get().config || { lastQuoteNumber: { year: 2026, month: 5, sequence: 0 } }; },
-  setConfig(v) { this.get().config = v; this.save(); },
+  setConfig(v) { this.get().config = v; return this.save(); },
   // 数据使用量 (估算)
   getUsage() {
     const raw = localStorage.getItem(STORAGE_KEY) || '{}';
@@ -4820,9 +4821,18 @@ function importData(event) {
         quotationCount++;
       }
 
-      Storage.setCustomers(existingCustomers);
-      Storage.setFollowups(existingFollowups);
-      Storage.setQuotations(existingQuotations);
+      if (!Storage.setCustomers(existingCustomers)) {
+        Utils.toast('客户数据保存失败，可能是存储空间已满。请先导出备份并清空部分数据后再试。');
+        event.target.value = '';
+        return;
+      }
+      if (!Storage.setFollowups(existingFollowups)) {
+        // 客户已保存，跟进失败时提示但不回滚
+        Utils.toast('跟进记录保存失败（客户数据已保存）。可能是存储空间不足。');
+      }
+      if (!Storage.setQuotations(existingQuotations)) {
+        Utils.toast('报价记录保存失败。可能是存储空间不足。');
+      }
 
       // 导入社媒管理
       let socialMediaCount = 0;
@@ -4837,14 +4847,16 @@ function importData(event) {
         if (Array.isArray(importSocialMedia.posts)) {
           for (const p of importSocialMedia.posts) { p.id = Utils.id(); sm.posts.push(p); socialMediaCount++; }
         }
-        Storage.setSocialMedia(sm);
+        if (!Storage.setSocialMedia(sm)) {
+          Utils.toast('社媒数据保存失败。可能是存储空间不足。');
+        }
       }
 
       showImportResult(importCustomers.length, newCount, mergedCount, skipped.length, skipped, followupCount, quotationCount, socialMediaCount);
       Router.handleRoute();
     } catch(err) {
-      console.error('Import error:', err);
-      Utils.toast('文件解析失败，请检查文件格式');
+      console.error('导入JSON出错:', err);
+      Utils.toast('文件解析失败：请确认 JSON 格式正确（需包含 customers 数组）');
       event.target.value = '';
     }
   };
