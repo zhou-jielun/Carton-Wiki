@@ -4458,7 +4458,38 @@ function exportAllData() {
   if (Array.isArray(data.materials)) {
     data.materials = data.materials.map(m => { const { base64, ...rest } = m; return rest; });
   }
-  const json = JSON.stringify(data, null, 2);
+  // 在每个客户对象中嵌入跟进记录，方便直接查看
+  const followups = data.followups || [];
+  const fupMap = {};
+  for (const f of followups) {
+    if (!fupMap[f.customerId]) fupMap[f.customerId] = [];
+    fupMap[f.customerId].push({
+      date: f.date || '',
+      type: f.method || f.type || '',
+      content: f.content || '',
+      nextAction: f.nextAction || '',
+      nextFollowUpDate: f.nextFollowUpDate || '',
+      createdAt: f.createdAt || ''
+    });
+  }
+  const exportedCustomers = (data.customers || []).map(function(c) {
+    const records = fupMap[c.id] || [];
+    // 兼容：如果 customer 对象已有 followUpRecords（旧格式），先合并再去重
+    const existing = Array.isArray(c.followUpRecords) ? c.followUpRecords : [];
+    const keySet = new Set(records.map(function(r) { return r.date + '|' + r.type + '|' + r.content; }));
+    for (const er of existing) {
+      const ek = (er.date || '') + '|' + (er.type || '') + '|' + (er.content || '');
+      if (!keySet.has(ek)) {
+        records.push(er);
+        keySet.add(ek);
+      }
+    }
+    c.followUpRecords = records;
+    return c;
+  });
+  // 用带 followUpRecords 的客户数组覆盖原数组
+  const exportData = Object.assign({}, data, { customers: exportedCustomers });
+  const json = JSON.stringify(exportData, null, 2);
   const dateStr = Utils.today();
   Utils.download('carton-crm-backup-' + dateStr + '.json', json);
   localStorage.setItem('carton_crm_last_backup', Utils.today());
@@ -4829,6 +4860,11 @@ function importData(event) {
           existingCustomers.push(ic);
           newCount++;
         }
+      }
+
+      // 清理客户对象中的 followUpRecords 字段（跟进记录已单独存储，无需冗余）
+      for (const customer of existingCustomers) {
+        delete customer.followUpRecords;
       }
 
       // 导入跟进记录（根据映射更新 customerId，基于内容去重）
