@@ -4776,7 +4776,7 @@ function importData(event) {
           for (const rec of customer.followUpRecords) {
             // 跳过已经在 raw.followups 中的记录（避免重复）
             const alreadyInFollowups = importFollowups.some(f =>
-              f.customerId === custId && f.type === rec.type && f.content === rec.content && f.date === rec.date
+              f.customerId === custId && (f.method || f.type) === (rec.type || rec.method) && f.content === rec.content && f.date === rec.date
             );
             if (!alreadyInFollowups) {
               importFollowups.push({
@@ -4869,17 +4869,20 @@ function importData(event) {
 
       // 导入跟进记录（根据映射更新 customerId，基于内容去重）
       const existingFollowups = Storage.getFollowups();
-      const followupKeySet = new Set(existingFollowups.map(f => (f.customerId || '') + '|' + (f.type || '') + '|' + (f.content || '') + '|' + (f.createdAt || '').slice(0, 10)));
+      const followupKeySet = new Set(existingFollowups.map(f => (f.customerId || '') + '|' + (f.method || f.type || '') + '|' + (f.content || '') + '|' + (f.createdAt || '').slice(0, 10)));
       let followupCount = 0;
       for (const f of importFollowups) {
         const mappedId = f.customerId && oldIdNewIdMap[f.customerId];
         if (!mappedId) continue;  // 客户未导入，跳过
-        const key = mappedId + '|' + (f.type || '') + '|' + (f.content || '') + '|' + (f.createdAt || '').slice(0, 10);
+        const key = mappedId + '|' + (f.method || f.type || '') + '|' + (f.content || '') + '|' + (f.createdAt || '').slice(0, 10);
         if (followupKeySet.has(key)) continue; // 已有相同内容，跳过
         followupKeySet.add(key);
         f.id = Utils.id();
         f.customerId = mappedId;
         f.createdAt = f.createdAt || new Date().toISOString();
+        // 统一字段名：旧格式用 type，CRM 内部用 method
+        if (!f.method && f.type) { f.method = f.type; }
+        if (!f.type && f.method) { f.type = f.method; }
         existingFollowups.push(f);
         followupCount++;
       }
