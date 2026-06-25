@@ -4738,6 +4738,25 @@ function importData(event) {
       const raw = JSON.parse(e.target.result);
       const importCustomers = Array.isArray(raw.customers) ? raw.customers : (Array.isArray(raw) ? raw : []);
       const importFollowups = Array.isArray(raw.followups) ? raw.followups : [];
+      // 兼容旧格式：从每个客户对象内的 followUpRecords 提取跟进记录
+      for (const customer of importCustomers) {
+        if (Array.isArray(customer.followUpRecords) && customer.followUpRecords.length > 0) {
+          const custId = customer.id;
+          for (const rec of customer.followUpRecords) {
+            // 跳过已经在 raw.followups 中的记录（避免重复）
+            const alreadyInFollowups = importFollowups.some(f =>
+              f.customerId === custId && f.type === rec.type && f.content === rec.content && f.date === rec.date
+            );
+            if (!alreadyInFollowups) {
+              importFollowups.push({
+                ...rec,
+                customerId: custId,
+                createdAt: rec.createdAt || rec.date || new Date().toISOString(),
+              });
+            }
+          }
+        }
+      }
       const importQuotations = Array.isArray(raw.quotations) ? raw.quotations : [];
       const importSocialMedia = raw.socialMedia || null;
       if (importCustomers.length === 0) {
