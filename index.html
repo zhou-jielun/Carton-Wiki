@@ -2193,11 +2193,14 @@ Router.renderCustomers = function(content, title, subtitle, actions) {
 var COUNTRY_GROUPS = [
   { name: '东南亚', countries: ['泰国','印度尼西亚','印尼','越南','马来西亚','菲律宾','柬埔寨','老挝','缅甸','新加坡','文莱'] },
   { name: '东亚', countries: ['中国','日本','韩国','香港','台湾','澳门'] },
-  { name: '南亚', countries: ['印度'] },
-  { name: '中东非洲', countries: ['土耳其','阿联酋','沙特','沙特阿拉伯','埃及','南非'] },
-  { name: '东欧', countries: ['俄罗斯','波兰'] },
-  { name: '西欧', countries: ['德国','法国','意大利','西班牙','荷兰','英国'] },
-  { name: '美洲', countries: ['美国','加拿大','巴西','墨西哥','澳大利亚'] }
+  { name: '南亚', countries: ['印度','斯里兰卡','巴基斯坦','孟加拉国','尼泊尔'] },
+  { name: '中亚', countries: ['乌兹别克斯坦','哈萨克斯坦','塔吉克斯坦','吉尔吉斯斯坦','土库曼斯坦'] },
+  { name: '中东', countries: ['土耳其','阿联酋','沙特','沙特阿拉伯','埃及','伊朗','伊拉克','约旦','以色列','科威特','卡塔尔','巴勒斯坦','也门','叙利亚','黎巴嫩'] },
+  { name: '非洲', countries: ['南非','肯尼亚','尼日利亚','埃塞俄比亚','加纳','坦桑尼亚','乌干达','摩洛哥','阿尔及利亚','突尼斯','喀麦隆','科特迪瓦','津巴布韦','赞比亚','塞内加尔','马达加斯加'] },
+  { name: '东欧', countries: ['俄罗斯','乌克兰','波兰','罗马尼亚','保加利亚','摩尔多瓦','白俄罗斯','塞尔维亚','克罗地亚','匈牙利','捷克','斯洛伐克','奥地利'] },
+  { name: '西欧', countries: ['德国','法国','意大利','西班牙','荷兰','英国','葡萄牙','比利时','瑞士','瑞典','挪威','丹麦','芬兰','爱尔兰','希腊'] },
+  { name: '美洲', countries: ['美国','加拿大','墨西哥','巴西','阿根廷','智利','哥伦比亚','秘鲁','厄瓜多尔','委内瑞拉','危地马拉','洪都拉斯','萨尔瓦多','哥斯达黎加','巴拿马','多米尼加','古巴'] },
+  { name: '大洋洲', countries: ['澳大利亚','新西兰'] }
 ];
 
 // 显示国家筛选下拉
@@ -2226,7 +2229,29 @@ function renderCountryFilterList(keyword) {
       html += '<div style="padding:7px 14px;cursor:pointer;font-size:13px;border-radius:8px;margin:1px 8px;display:flex;align-items:center;gap:10px;color:#333;" onmouseover="this.style.background=\'#f0f4f8\'" onmouseout="this.style.background=\'\'" onclick="selectCountryFilter(\'' + c.replace(/'/g, "\\'") + '\');">' + flag + ' <span style="font-weight:500;">' + c + '</span></div>';
     });
   });
-  if (kw && html.indexOf('onmouseover') === -1) {
+  // 兜底：从现有客户数据中补充未在分组里的国家
+  var allGroupCountries = new Set();
+  COUNTRY_GROUPS.forEach(function(g) { g.countries.forEach(function(c) { allGroupCountries.add(c); }); });
+  var customers = Storage.getCustomers();
+  var extraCountries = [];
+  var extraSeen = new Set();
+  for (var i = 0; i < customers.length; i++) {
+    var cc = (customers[i].country || '').trim();
+    if (cc && !allGroupCountries.has(cc) && !extraSeen.has(cc)) {
+      if (!kw || cc.toLowerCase().indexOf(kw) !== -1) {
+        extraCountries.push(cc);
+        extraSeen.add(cc);
+      }
+    }
+  }
+  if (extraCountries.length > 0) {
+    html += '<div style="padding:6px 14px 2px;font-size:11px;color:#8898aa;font-weight:600;letter-spacing:0.5px;margin-top:4px;">其他</div>';
+    extraCountries.forEach(function(c) {
+      var flag = getCountryFlag(c);
+      html += '<div style="padding:7px 14px;cursor:pointer;font-size:13px;border-radius:8px;margin:1px 8px;display:flex;align-items:center;gap:10px;color:#333;" onmouseover="this.style.background=\'#f0f4f8\'" onmouseout="this.style.background=\'\'" onclick="selectCountryFilter(\'' + c.replace(/'/g, "\\'") + '\');">' + flag + ' <span style="font-weight:500;">' + c + '</span></div>';
+    });
+  }
+  if (kw && html.replace(/<div[^>]*>🌍 全部国家<\/div>/, '').indexOf('onmouseover') === -1) {
     html += '<div style="padding:16px 12px;text-align:center;font-size:13px;color:var(--text-tertiary);">未找到匹配国家</div>';
   }
   dd.innerHTML = html;
