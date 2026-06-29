@@ -4873,15 +4873,12 @@ function importData(event) {
         }
       }
 
-      // 清理客户对象中的 followUpRecords 字段（跟进记录已单独存储，无需冗余）
-      for (const customer of existingCustomers) {
-        delete customer.followUpRecords;
-      }
-
       // 导入跟进记录（根据映射更新 customerId，基于内容去重）
       const existingFollowups = Storage.getFollowups();
       const followupKeySet = new Set(existingFollowups.map(f => (f.customerId || '') + '|' + (f.method || f.type || '') + '|' + (f.content || '') + '|' + (f.createdAt || '').slice(0, 10)));
       let followupCount = 0;
+      // 追踪哪些客户从顶层followups获得了记录
+      const customersWithFollowups = new Set();
       for (const f of importFollowups) {
         const mappedId = f.customerId && oldIdNewIdMap[f.customerId];
         if (!mappedId) continue;  // 客户未导入，跳过
@@ -4890,6 +4887,7 @@ function importData(event) {
         followupKeySet.add(key);
         f.id = Utils.id();
         f.customerId = mappedId;
+        customersWithFollowups.add(mappedId);  // 标记该客户已有顶层记录
         f.createdAt = f.createdAt || new Date().toISOString();
         // 统一字段名：旧格式用 type，CRM 内部用 method
         if (!f.method && f.type) { f.method = f.type; }
@@ -4898,7 +4896,38 @@ function importData(event) {
         followupCount++;
       }
 
-      // 导入报价记录（根据映射更新 customerId，基于内容去重）
+      // 兜底：对于顶层followups中没有记录但从followUpRecords来的客户，补充导入
+      let furFallbackCount = 0;
+      for (const customer of existingCustomers) {
+        const cid = customer.id;
+        if (customersWithFollowups.has(cid)) continue;  // 已有顶层记录，跳过
+        const fur = customer.followUpRecords;
+        if (!Array.isArray(fur) || fur.length === 0) continue;  // 无内嵌记录
+        for (const rec of fur) {
+          const key = cid + '|' + (rec.method || rec.type || '') + '|' + (rec.content || '') + '|' + (rec.createdAt || rec.date || '').slice(0, 10);
+          if (followupKeySet.has(key)) continue;
+          followupKeySet.add(key);
+          existingFollowups.push({
+            id: Utils.id(),
+            customerId: cid,
+            method: rec.method || rec.type || '',
+            type: rec.type || rec.method || '',
+            content: rec.content || '',
+            date: rec.date || '',
+            createdAt: rec.createdAt || rec.date || new Date().toISOString(),
+          });
+          followupCount++;
+          furFallbackCount++;
+        }
+      }
+      if (furFallbackCount > 0) {
+        console.log('[导入诊断] followUpRecords兜底补充:', furFallbackCount, '条');
+      }
+
+      // 清理客户对象中的 followUpRecords 字段（跟进记录已单独存储，无需冗余）
+      for (const customer of existingCustomers) {
+        delete customer.followUpRecords;
+      }
       const existingQuotations = Storage.getQuotations();
       const quotationKeySet = new Set(existingQuotations.map(q => (q.customerId || '') + '|' + (q.name || '') + '|' + (q.amount || '') + '|' + (q.createdAt || '').slice(0, 10)));
       let quotationCount = 0;
