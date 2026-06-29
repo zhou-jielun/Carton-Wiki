@@ -2401,6 +2401,7 @@ Router.renderCustomerDetail = function(id, content, title, subtitle, actions) {
 
   const pri = Utils.getPriority(c.priority);
   const followups = Utils.getCustomerFollowups(id);
+  console.log('[客户详情诊断] 客户ID:', id, '| 客户名:', c.name, '| 跟进数:', followups.length, '| 全局followups:', Storage.getFollowups().length);
   const quotations = Utils.getCustomerQuotations(id);
 
   content.innerHTML = `
@@ -4933,6 +4934,8 @@ function importData(event) {
         }
       }
 
+      console.log('[导入诊断] followups总数:', Storage.getFollowups().length, '| customers总数:', Storage.getCustomers().length);
+      console.log('[导入诊断] 前3条followup样例:', Storage.getFollowups().slice(0, 3).map(f => ({ customerId: f.customerId, method: f.method, content: (f.content || '').slice(0, 20) })));
       showImportResult(importCustomers.length, newCount, mergedCount, skipped.length, skipped, followupCount, quotationCount, socialMediaCount);
       Router.handleRoute();
     } catch(err) {
