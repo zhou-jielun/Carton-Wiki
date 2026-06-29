@@ -2402,6 +2402,18 @@ Router.renderCustomerDetail = function(id, content, title, subtitle, actions) {
   const pri = Utils.getPriority(c.priority);
   const followups = Utils.getCustomerFollowups(id);
   console.log('[客户详情诊断] 客户ID:', id, '| 客户名:', c.name, '| 跟进数:', followups.length, '| 全局followups:', Storage.getFollowups().length);
+  if (followups.length === 0) {
+    const allFups = Storage.getFollowups();
+    const allCusts = Storage.getCustomers();
+    console.log('[客户详情诊断] 为何0条? followups前3条customerId:', allFups.slice(0, 3).map(f => f.customerId));
+    console.log('[客户详情诊断] 为何0条? customers前3条id:', allCusts.slice(0, 3).map(c => c.id));
+    console.log('[客户详情诊断] 当前客户id与followups中任意customerId匹配?', allFups.some(f => f.customerId === id));
+    // 检查是否所有followup的customerId都不同
+    const allCustIds = new Set(allCusts.map(c => c.id));
+    const fupIdsSet = new Set(allFups.map(f => f.customerId));
+    const inBoth = [...allCustIds].filter(cid => fupIdsSet.has(cid));
+    console.log('[客户详情诊断] customers id在followups中出现的数量:', inBoth.length, '/', allCustIds.size);
+  }
   const quotations = Utils.getCustomerQuotations(id);
 
   content.innerHTML = `
@@ -4935,7 +4947,18 @@ function importData(event) {
       }
 
       console.log('[导入诊断] followups总数:', Storage.getFollowups().length, '| customers总数:', Storage.getCustomers().length);
-      console.log('[导入诊断] 前3条followup样例:', Storage.getFollowups().slice(0, 3).map(f => ({ customerId: f.customerId, method: f.method, content: (f.content || '').slice(0, 20) })));
+      const allFups = Storage.getFollowups();
+      console.log('[导入诊断] 前3条followup样例:', allFups.slice(0, 3).map(f => ({ customerId: f.customerId, method: f.method, content: (f.content || '').slice(0, 20) })));
+      const allCusts = Storage.getCustomers();
+      console.log('[导入诊断] 前3条客户样例:', allCusts.slice(0, 3).map(c => ({ id: c.id, name: c.name })));
+      console.log('[导入诊断] oldIdNewIdMap条目:', Object.keys(oldIdNewIdMap).length, '| 前3个映射:', JSON.stringify(Object.entries(oldIdNewIdMap).slice(0, 3)));
+      // 检查第1个客户的ID在followups中能否找到
+      if (allCusts.length > 0 && allFups.length > 0) {
+        const cid = allCusts[0].id;
+        const matched = allFups.filter(f => f.customerId === cid);
+        console.log('[导入诊断] 第1个客户(' + allCusts[0].name + ') id=' + cid + ' 在followups中匹配:', matched.length, '条');
+        console.log('[导入诊断] followups中不同customerId样本:', [...new Set(allFups.slice(0,20).map(f => f.customerId))].slice(0,5));
+      }
       showImportResult(importCustomers.length, newCount, mergedCount, skipped.length, skipped, followupCount, quotationCount, socialMediaCount);
       Router.handleRoute();
     } catch(err) {
