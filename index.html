@@ -4900,7 +4900,6 @@ function importData(event) {
       let furFallbackCount = 0;
       for (const customer of existingCustomers) {
         const cid = customer.id;
-        if (customersWithFollowups.has(cid)) continue;  // 已有顶层记录，跳过
         const fur = customer.followUpRecords;
         if (!Array.isArray(fur) || fur.length === 0) continue;  // 无内嵌记录
         for (const rec of fur) {
